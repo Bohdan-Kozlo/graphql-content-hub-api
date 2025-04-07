@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output = "../prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+
+enum ReactionType {
+  LIKE
+  SAVE
+  DISLIKE
+}
+
+enum SubscriptionType {
+  AUTHOR
+  CATEGORY
+  SOURCE
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  password       String
+  username       String
+  bio            String?
+  avatarUrl      String?
+  role           Role           @default(USER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  profile        Profile?
+  contents       Content[]      @relation("AuthorContents")
+  comments       Comment[]
+  reactions      Reaction[]
+  subscriptions  Subscription[]
+  views          View[]
+  notifications  Notification[]
+}
+
+model Profile {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
+  settings   Json?
+  language   String?
+}
+
+model Content {
+  id           String         @id @default(uuid())
+  title        String
+  description  String
+  type         ContentType
+  body         String?
+  mediaUrl     String?
+  duration     Int?
+  thumbnail    String?
+  readTime     Int?
+
+  author       User           @relation("AuthorContents", fields: [authorId], references: [id])
+  authorId     String
+
+  source       Source?        @relation(fields: [sourceId], references: [id])
+  sourceId     String?
+
+  category     Category?      @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+
+  tags         Tag[]          @relation("ContentTags")
+  comments     Comment[]
+  reactions    Reaction[]
+  views        View[]
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+enum ContentType {
+  ARTICLE
+  VIDEO
+  PODCAST
+  NEWS
+}
+
+model Category {
+  id         String       @id @default(uuid())
+  name       String
+  parent     Category?    @relation("CategoryParent", fields: [parentId], references: [id])
+  parentId   String?
+  children   Category[]   @relation("CategoryParent")
+  contents   Content[]
+}
+
+model Tag {
+  id         String       @id @default(uuid())
+  name       String       @unique
+  contents   Content[]    @relation("ContentTags")
+}
+
+model Source {
+  id          String     @id @default(uuid())
+  name        String
+  url         String
+  description String?
+  logoUrl     String?
+  contents    Content[]
+}
+
+model Comment {
+  id          String      @id @default(uuid())
+  content     Content     @relation(fields: [contentId], references: [id])
+  contentId   String
+
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId    String?
+  replies     Comment[]   @relation("CommentReplies")
+
+  text        String
+  createdAt   DateTime    @default(now())
+}
+
+model Reaction {
+  id          String       @id @default(uuid())
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+
+  content     Content      @relation(fields: [contentId], references: [id])
+  contentId   String
+
+  type        ReactionType
+  createdAt   DateTime     @default(now())
+
+  @@unique([userId, contentId, type])
+}
+
+model Subscription {
+  id          String            @id @default(uuid())
+  user        User              @relation(fields: [userId], references: [id])
+  userId      String
+
+  type        SubscriptionType
+  targetId    String            // Depending on type, refers to different table
+  createdAt   DateTime          @default(now())
+}
+
+model View {
+  id          String       @id @default(uuid())
+  user        User?        @relation(fields: [userId], references: [id])
+  userId      String?
+
+  content     Content      @relation(fields: [contentId], references: [id])
+  contentId   String
+
+  viewedAt    DateTime     @default(now())
+  duration    Int?
+}
+
+model Notification {
+  id          String       @id @default(uuid())
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+
+  text        String
+  link        String
+  read        Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+}
