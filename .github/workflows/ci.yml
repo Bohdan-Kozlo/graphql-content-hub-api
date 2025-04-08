@@ -54,17 +54,16 @@ jobs:
       run: |
         dockerize -wait tcp://localhost:6379 -timeout 2m
 
-    - name: Run DB migrations
-      run: npx prisma migrate deploy
+    -name: Prepare DB and generate Prisma client
+      run: |
+        npx prisma migrate deploy
+        npx prisma generate
 
-    - name: Generate Prisma client
-      run: npx prisma generate
-
-    - name: Run unit tests
+    -name: Run unit tests
       run: npm run test
 
-    - name: Run Tests
+    -name: Run Tests
       run: npm run test:e2e
     
-    - name: Build
+    -name: Build
       run: npm run build
