@@ -4,7 +4,9 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { UserModule } from './modules/user/user.module';
 import { CommentModule } from './modules/comment/comment.module';
-import { PrismaModule } from './modules/prisma/prisma.module';
+import { PrismaModule } from './common/prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -15,9 +17,13 @@ import { PrismaModule } from './modules/prisma/prisma.module';
       playground: true,
       introspection: true,
     }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     UserModule,
     CommentModule,
     PrismaModule,
+    RedisModule,
   ],
   controllers: [],
   providers: [],

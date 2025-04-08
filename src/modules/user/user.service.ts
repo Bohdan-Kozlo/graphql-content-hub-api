@@ -1,13 +1,43 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from 'prisma/generated';
+import { UpdateUserInput } from './dto/update-user.input';
 
 @Injectable()
 export class UserService {
   constructor(private prismaService: PrismaService) {}
 
   async create(data: CreateUserInput): Promise<User> {
-    return this.prismaService.user.create({ data });
+    return await this.prismaService.user.create({ data });
+  }
+
+  async findAll(): Promise<User[]> {
+    return await this.prismaService.user.findMany();
+  }
+
+  async findOne(id: string): Promise<User> {
+    const user = await this.prismaService.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  }
+
+  async update(id: string, data: UpdateUserInput): Promise<User> {
+    return await this.prismaService.user.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const deletedUser = await this.prismaService.user.delete({ where: { id } });
+    return !!deletedUser;
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.prismaService.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
   }
 }
