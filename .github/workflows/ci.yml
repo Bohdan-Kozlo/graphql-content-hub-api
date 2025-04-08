@@ -1,16 +1,17 @@
-name: CI
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: passpostgresword
+          POSTGRES_DB: content_hub
+        options: --health-cmd="pg_isready -U user -d test_db" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
     - name: Checkout code
@@ -19,13 +20,14 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'
+        node-version: '16'
 
     - name: Install dependencies
       run: npm install
 
-    - name: Run tests
-      run: npm test
+    - name: Wait for PostgreSQL to be ready
+      run: |
+        dockerize -wait tcp://localhost:5432 -timeout 2m
 
-    - name: Build project
-      run: npm run build
+    - name: Run Tests
+      run: npm run test:e2e
