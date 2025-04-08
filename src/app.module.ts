@@ -19,6 +19,7 @@ import { RedisModule } from './common/redis/redis.module';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env.exemple',
     }),
     UserModule,
     CommentModule,

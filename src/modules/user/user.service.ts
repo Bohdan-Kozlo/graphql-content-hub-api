@@ -29,15 +29,16 @@ export class UserService {
   }
 
   async delete(id: string): Promise<boolean> {
-    const deletedUser = await this.prismaService.user.delete({ where: { id } });
-    return !!deletedUser;
+    try {
+      await this.prismaService.user.delete({ where: { id } });
+      return true;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error: unknown) {
+      return false;
+    }
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.prismaService.user.findUnique({ where: { email } });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    return user;
+  async findByEmail(email: string): Promise<User | null> {
+    return await this.prismaService.user.findUnique({ where: { email } });
   }
 }

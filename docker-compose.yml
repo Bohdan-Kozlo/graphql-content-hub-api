@@ -19,14 +19,14 @@ services:
     ports:
       - "6379:6379"
 
-  app:
-    build: .
-    container_name: app_service
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-      - redis
+  # app:
+  #   build: .
+  #   container_name: app_service
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+  #     - redis
 
 volumes:
   postgres_data:
