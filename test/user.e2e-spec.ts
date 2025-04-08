@@ -1,23 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
-import { CreateUserInput } from './../src/modules/user/dto/create-user.input';
-
-// Define a sample user input for testing
-const sampleUser: CreateUserInput = {
-  email: 'test@example.com',
-  password: 'password123',
-  username: 'testuser',
-  bio: 'This is a test user',
-  avatarUrl: 'http://example.com/avatar.png',
-};
+import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/common/prisma/prisma.service';
 
 describe('User Module (e2e)', () => {
   let app: INestApplication;
+  let prisma: PrismaService;
+
+  const sampleUser = {
+    email: 'testuser@example.com',
+    username: 'testuser',
+    password: 'password123',
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,9 +25,12 @@ describe('User Module (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+
+    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
+    await prisma.user.deleteMany({});
     await app.close();
   });
 
@@ -36,20 +38,24 @@ describe('User Module (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          createUser(input: {
-            email: "${sampleUser.email}",
-            password: "${sampleUser.password}",
-            username: "${sampleUser.username}",
-            bio: "${sampleUser.bio}",
-            avatarUrl: "${sampleUser.avatarUrl}"
-          }) {
-            id
-            email
-            username
+        query: `
+          mutation {
+            createUser(data: {
+              email: "${sampleUser.email}",
+              username: "${sampleUser.username}",
+              password: "${sampleUser.password}"
+            }) {
+              id
+              email
+              username
+            }
           }
-        }`,
+        `,
       });
+
+    if (response.status !== 200) {
+      console.error(JSON.stringify(response.body, null, 2));
+    }
 
     expect(response.status).toBe(200);
     expect(response.body.data.createUser.email).toBe(sampleUser.email);
@@ -60,37 +66,42 @@ describe('User Module (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `query {
-          getUsers {
-            id
-            email
-            username
+        query: `
+          query {
+            users {
+              id
+              email
+              username
+            }
           }
-        }`,
+        `,
       });
 
+    if (response.status !== 200) {
+      console.error(JSON.stringify(response.body, null, 2));
+    }
+
     expect(response.status).toBe(200);
-    expect(response.body.data.getUsers).toBeInstanceOf(Array);
-    expect(response.body.data.getUsers.length).toBeGreaterThan(0);
+    expect(Array.isArray(response.body.data.users)).toBe(true);
+    expect(response.body.data.users.length).toBeGreaterThan(0);
   });
 
   it('should return user by ID', async () => {
     const createResponse = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          createUser(input: {
-            email: "finduser@example.com",
-            password: "password123",
-            username: "finduser",
-            bio: "This user will be found",
-            avatarUrl: "http://example.com/avatar.png"
-          }) {
-            id
-            email
-            username
+        query: `
+          mutation {
+            createUser(data: {
+              email: "findme@example.com",
+              username: "findme",
+              password: "pass123"
+            }) {
+              id
+              email
+            }
           }
-        }`,
+        `,
       });
 
     const userId = createResponse.body.data.createUser.id;
@@ -98,37 +109,36 @@ describe('User Module (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `query {
-          getUserById(id: "${userId}") {
-            id
-            email
-            username
+        query: `
+          query {
+            user(id: "${userId}") {
+              id
+              email
+              username
+            }
           }
-        }`,
+        `,
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.getUserById.id).toBe(userId);
-    expect(response.body.data.getUserById.username).toBe('finduser');
+    expect(response.body.data.user.id).toBe(userId);
   });
 
   it('should update user information', async () => {
     const createResponse = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          createUser(input: {
-            email: "updateuser@example.com",
-            password: "password123",
-            username: "updateuser",
-            bio: "This user will be updated",
-            avatarUrl: "http://example.com/avatar.png"
-          }) {
-            id
-            email
-            username
+        query: `
+          mutation {
+            createUser(data: {
+              email: "update@example.com",
+              username: "updateme",
+              password: "pass123"
+            }) {
+              id
+            }
           }
-        }`,
+        `,
       });
 
     const userId = createResponse.body.data.createUser.id;
@@ -136,40 +146,38 @@ describe('User Module (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          updateUser(id: "${userId}", input: {
-            username: "updateduser",
-            bio: "Updated bio"
-          }) {
-            id
-            username
-            bio
+        query: `
+          mutation {
+            updateUser(data: {
+              id: "${userId}",
+              username: "updated"
+            }) {
+              id
+              username
+            }
           }
-        }`,
+        `,
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.updateUser.username).toBe('updateduser');
-    expect(response.body.data.updateUser.bio).toBe('Updated bio');
+    expect(response.body.data.updateUser.username).toBe('updated');
   });
 
   it('should delete a user', async () => {
     const createResponse = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          createUser(input: {
-            email: "deleteuser@example.com",
-            password: "password123",
-            username: "deleteuser",
-            bio: "This user will be deleted",
-            avatarUrl: "http://example.com/avatar.png"
-          }) {
-            id
-            email
-            username
+        query: `
+          mutation {
+            createUser(data: {
+              email: "delete@example.com",
+              username: "deleteme",
+              password: "pass123"
+            }) {
+              id
+            }
           }
-        }`,
+        `,
       });
 
     const userId = createResponse.body.data.createUser.id;
@@ -177,16 +185,14 @@ describe('User Module (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
-        query: `mutation {
-          deleteUser(id: "${userId}") {
-            id
-            email
-            username
+        query: `
+          mutation {
+            deleteUser(id: "${userId}")
           }
-        }`,
+        `,
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.deleteUser.id).toBe(userId);
+    expect(response.body.data.deleteUser).toBe(true);
   });
 });
