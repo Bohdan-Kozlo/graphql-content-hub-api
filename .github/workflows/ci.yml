@@ -14,7 +14,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:15
         ports:
           - 5432:5432
         env:
@@ -36,7 +36,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'
+        node-version: 22
 
     - name: Install dependencies
       run: npm install
@@ -53,6 +53,13 @@ jobs:
     - name: Wait for Redis to be ready
       run: |
         dockerize -wait tcp://localhost:6379 -timeout 2m
+
+    - name: Generate Prisma client
+      run: npx prisma generate
+
+    - name: Push Prisma schema to database
+      run: npx prisma db push
+
 
     - name: Run Tests
       run: npm run test:e2e 
