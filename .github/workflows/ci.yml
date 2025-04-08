@@ -59,11 +59,12 @@ jobs:
         npx prisma migrate deploy
         npx prisma generate
 
+    - name: Build the project
+      run: npm run build
+
     - name: Run unit tests
       run: npm run test
 
     - name: Run Tests
       run: npm run test:e2e
-    
-    - name: Build
-      run: npm run build
+  
