@@ -1,17 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:13
         ports:
           - 5432:5432
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: passpostgresword
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: content_hub
         options: --health-cmd="pg_isready -U user -d test_db" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
     - name: Checkout code
@@ -25,9 +41,18 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Install dockerize (to wait for services)
+      run: |
+        curl -sSL https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz | tar -xzv
+        mv dockerize /usr/local/bin/
+
     - name: Wait for PostgreSQL to be ready
       run: |
         dockerize -wait tcp://localhost:5432 -timeout 2m
 
+    - name: Wait for Redis to be ready
+      run: |
+        dockerize -wait tcp://localhost:6379 -timeout 2m
+
     - name: Run Tests
-      run: npm run test:e2e
+      run: npm run test:e2e 
