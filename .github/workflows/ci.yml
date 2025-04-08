@@ -21,7 +21,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: content_hub
-        options: --health-cmd="pg_isready -U user -d test_db" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: --health-cmd="pg_isready -U postgres -d content_hub" --health-interval=10s --health-timeout=5s --health-retries=5
 
       redis:
         image: redis:latest
