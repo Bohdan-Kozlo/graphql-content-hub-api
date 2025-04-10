@@ -18,7 +18,7 @@ describe('UserService', () => {
     updatedAt: new Date(),
     bio: null,
     avatarUrl: null,
-    role: 'USER',
+    role: ['USER'],
   };
 
   beforeEach(async () => {

@@ -85,11 +85,11 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(userId: string, role: Role) {
+  private async generateTokens(userId: string, roles: Role[]) {
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync({ sub: userId, role }),
+      this.jwtService.signAsync({ sub: userId, roles }),
       this.jwtService.signAsync(
-        { sub: userId, role },
+        { sub: userId, roles },
         {
           secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
           expiresIn: '7d',
