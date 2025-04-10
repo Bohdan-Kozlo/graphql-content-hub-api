@@ -30,7 +30,7 @@ export class AuthResolver {
 
   @UseGuards(RefreshGuard)
   @Mutation(() => AuthResponse)
-  async refreshTokens(@CurrentUser() userId: string, @Args('refreshToken') refreshToken: string) {
-    return await this.authService.refreshTokens(userId, refreshToken);
+  async refreshTokens(@CurrentUser() userId: string) {
+    return await this.authService.refreshTokens(userId);
   }
 }

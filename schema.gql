@@ -32,7 +32,7 @@ type Mutation {
   login(data: LoginInput!): AuthResponse!
   signup(data: SignupInput!): AuthResponse!
   logout: Boolean!
-  refreshTokens(refreshToken: String!): AuthResponse!
+  refreshTokens: AuthResponse!
   createUser(data: CreateUserInput!): UserModel!
   updateUser(data: UpdateUserInput!): UserModel!
   deleteUser(id: String!): Boolean!
