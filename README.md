@@ -40,7 +40,7 @@ A customizable content delivery platform built with **NestJS**, **GraphQL**, and
 - **GraphQL**: Apollo Server (code-first approach)
 - **ORM**: [Prisma](https://www.prisma.io/) with PostgreSQL
 - **Auth**: JWT-based authentication
-- **Deployment**: Docker-ready, scalable microservice architecture
+- **Deployment**: Docker-ready
 
 ---
 ## 📦 Installation
