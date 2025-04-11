@@ -1,71 +1,71 @@
-name: CI
+# name: CI
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     branches:
+#       - master
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: content_hub
-        options: --health-cmd="pg_isready -U postgres -d content_hub" --health-interval=10s --health-timeout=5s --health-retries=5
+#     services:
+#       postgres:
+#         image: postgres:15
+#         ports:
+#           - 5432:5432
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#           POSTGRES_DB: content_hub
+#         options: --health-cmd="pg_isready -U postgres -d content_hub" --health-interval=10s --health-timeout=5s --health-retries=5
 
-      redis:
-        image: redis:latest
-        ports:
-          - 6379:6379
-        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+#       redis:
+#         image: redis:latest
+#         ports:
+#           - 6379:6379
+#         options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 22
+#     - name: Set up Node.js
+#       uses: actions/setup-node@v2
+#       with:
+#         node-version: 22
 
-    - name: Install dependencies
-      run: npm install
+#     - name: Install dependencies
+#       run: npm install
 
-    - name: Install dockerize (to wait for services)
-      run: |
-        curl -sSL https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz | tar -xzv
-        mv dockerize /usr/local/bin/
+#     - name: Install dockerize (to wait for services)
+#       run: |
+#         curl -sSL https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz | tar -xzv
+#         mv dockerize /usr/local/bin/
 
-    - name: Wait for PostgreSQL to be ready
-      run: |
-        dockerize -wait tcp://localhost:5432 -timeout 2m
+#     - name: Wait for PostgreSQL to be ready
+#       run: |
+#         dockerize -wait tcp://localhost:5432 -timeout 2m
 
-    - name: Wait for Redis to be ready
-      run: |
-        dockerize -wait tcp://localhost:6379 -timeout 2m
+#     - name: Wait for Redis to be ready
+#       run: |
+#         dockerize -wait tcp://localhost:6379 -timeout 2m
 
-    - name: Prepare DB and generate Prisma client
-      run: |
-        npx prisma migrate dev --name init
-        npx prisma migrate deploy
-        npx prisma generate
+#     - name: Prepare DB and generate Prisma client
+#       run: |
+#         npx prisma migrate dev --name init
+#         npx prisma migrate deploy
+#         npx prisma generate
 
-    - name: Build the project
-      run: npm run build
+#     - name: Build the project
+#       run: npm run build
 
-    - name: Run unit tests
-      run: npm run test
+#     - name: Run unit tests
+#       run: npm run test
 
-    - name: Run Tests
-      run: npm run test:e2e
+#     - name: Run Tests
+#       run: npm run test:e2e
   

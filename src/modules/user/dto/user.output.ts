@@ -1,4 +1,6 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
+import { Content, Role, Comment } from 'prisma/generated';
+import { ContentModel } from 'src/modules/content/dto/content.model';
 
 @ObjectType()
 export class UserModel {
@@ -17,12 +19,20 @@ export class UserModel {
   @Field({ nullable: true })
   avatarUrl?: string;
 
-  @Field()
-  role: string;
+  @Field(() => [Role])
+  roles: Role[];
 
   @Field()
   createdAt: Date;
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => [ContentModel])
+  contents: Content[];
+
+  @Field(() => [])
+  comments: Comment[];
 }
+
+registerEnumType(Role, { name: 'Role' });

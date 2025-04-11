@@ -8,6 +8,22 @@ import { UpdateUserInput } from './dto/update-user.input';
 export class UserService {
   constructor(private prismaService: PrismaService) {}
 
+  async getUserProfile(userId: string) {
+    return await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        profile: true,
+        bio: true,
+        avatarUrl: true,
+        username: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async create(data: CreateUserInput): Promise<User> {
     return await this.prismaService.user.create({ data });
   }

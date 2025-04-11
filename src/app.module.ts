@@ -7,6 +7,12 @@ import { CommentModule } from './modules/comment/comment.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './common/redis/redis.module';
+import { ContentModule } from './modules/content/content.module';
+import { CategoryModule } from './modules/category/category.module';
+import { TagModule } from './modules/tag/tag.module';
+import { SourceModule } from './modules/source/source.module';
+import { ReactionModule } from './modules/reaction/reaction.module';
+import { ViewModule } from './modules/view/view.module';
 
 @Module({
   imports: [
@@ -25,6 +31,12 @@ import { RedisModule } from './common/redis/redis.module';
     CommentModule,
     PrismaModule,
     RedisModule,
+    ContentModule,
+    CategoryModule,
+    TagModule,
+    SourceModule,
+    ReactionModule,
+    ViewModule,
   ],
   controllers: [],
   providers: [],
