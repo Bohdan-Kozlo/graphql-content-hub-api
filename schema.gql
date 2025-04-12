@@ -7,15 +7,59 @@ type AuthResponse {
   refreshToken: String!
 }
 
-type UserModel {
+type CategoryModel {
   id: String!
-  email: String!
-  username: String!
-  bio: String
-  avatarUrl: String
-  role: String!
+  name: String!
+  parent: CategoryModel
+  children: [CategoryModel!]
+  contents: [ContentModel!]!
+}
+
+type SourceModel {
+  id: String!
+  name: String!
+  url: String!
+  description: String
+  logoUrl: String
+  content: [ContentModel!]!
+}
+
+type TagModel {
+  id: String!
+  name: String!
+  contenst: [ContentModel!]!
+}
+
+type ContentModel {
+  title: String!
+  description: String!
+  type: ContentType!
+  body: String
+  mediaUrl: String
+  duration: Int
+  thumbnail: String
+  readTime: Int
+  user: UserModel!
+  source: SourceModel
+  category: CategoryModel
+  tags: [TagModel!]!
+  comments: [CommentModel!]!
+}
+
+enum ContentType {
+  ARTICLE
+  VIDEO
+  PODCAST
+  NEWS
+}
+
+type CommentModel {
+  id: String!
+  content: ContentModel!
+  user: UserModel!
+  perent: CommentModel
+  replies: [CommentModel!]
   createdAt: DateTime!
-  updatedAt: DateTime!
 }
 
 """
@@ -23,9 +67,32 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type UserModel {
+  id: String!
+  email: String!
+  username: String!
+  bio: String
+  avatarUrl: String
+  roles: [Role!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  contents: [ContentModel!]!
+  comments: [CommentModel!]!
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
 type Query {
   users: [UserModel!]!
   user(id: String!): UserModel!
+  profile: UserModel!
+  content(id: String!): ContentModel!
+  categories: [CategoryModel!]!
+  category(id: String!): CategoryModel!
 }
 
 type Mutation {
@@ -36,6 +103,12 @@ type Mutation {
   createUser(data: CreateUserInput!): UserModel!
   updateUser(data: UpdateUserInput!): UserModel!
   deleteUser(id: String!): Boolean!
+  updateProfile(data: UpdateUserInput!): UserModel!
+  createContent(data: CreateContentInput!): ContentModel!
+  updateContent(data: UpdateContentInput!, id: String!): ContentModel!
+  removeContent(id: String!): Boolean!
+  createCategory(data: CreateCategoryInput!): CategoryModel!
+  updateCategory(id: String!, data: UpdateCategoryInput!): CategoryModel!
 }
 
 input LoginInput {
@@ -64,4 +137,42 @@ input UpdateUserInput {
   bio: String
   avatarUrl: String
   id: String!
+}
+
+input CreateContentInput {
+  title: String!
+  description: String!
+  type: ContentType!
+  body: String
+  mediaUrl: String
+  duration: Int
+  thumbnail: String
+  readTime: Int
+  sourceId: String
+  tagIds: [String!]
+  categoryIds: [String!]
+}
+
+input UpdateContentInput {
+  title: String
+  description: String
+  type: ContentType
+  body: String
+  mediaUrl: String
+  duration: Int
+  thumbnail: String
+  readTime: Int
+  sourceId: String
+  tagIds: [String!]
+  categoryIds: [String!]
+}
+
+input CreateCategoryInput {
+  name: String!
+  parentId: ID
+}
+
+input UpdateCategoryInput {
+  name: String
+  parentId: ID
 }

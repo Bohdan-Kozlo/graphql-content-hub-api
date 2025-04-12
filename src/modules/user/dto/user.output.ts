@@ -1,5 +1,6 @@
 import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
 import { Content, Role, Comment } from 'prisma/generated';
+import { CommentModel } from 'src/modules/comment/dto/comment.model';
 import { ContentModel } from 'src/modules/content/dto/content.model';
 
 @ObjectType()
@@ -31,7 +32,7 @@ export class UserModel {
   @Field(() => [ContentModel])
   contents: Content[];
 
-  @Field(() => [])
+  @Field(() => [CommentModel])
   comments: Comment[];
 }
 

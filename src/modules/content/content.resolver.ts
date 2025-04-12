@@ -29,7 +29,7 @@ export class ContentResolver {
   }
 
   @UseGuards(AccessGuard)
-  @Mutation(() => ContentModel)
+  @Mutation(() => Boolean)
   async removeContent(@Args('id') id: string, @CurrentUser() userId: string) {
     return await this.contentService.remove(id, userId);
   }

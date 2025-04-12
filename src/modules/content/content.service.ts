@@ -98,10 +98,12 @@ export class ContentService {
       throw new BadRequestException('Content does not belong to user');
     }
 
-    return this.prismaService.content.delete({
+    const deletedContent = await this.prismaService.content.delete({
       where: {
         id,
       },
     });
+
+    return deletedContent ? true : false;
   }
 }

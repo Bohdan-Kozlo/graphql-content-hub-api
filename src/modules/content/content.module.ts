@@ -6,5 +6,6 @@ import { UserModule } from '../user/user.module';
 @Module({
   providers: [ContentResolver, ContentService],
   imports: [UserModule],
+  exports: [ContentService],
 })
 export class ContentModule {}

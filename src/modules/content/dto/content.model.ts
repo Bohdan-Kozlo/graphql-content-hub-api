@@ -1,5 +1,5 @@
 import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { Category, ContentType, Source, Tag, User } from 'prisma/generated';
+import { ContentType } from 'prisma/generated';
 import { CategoryModel } from 'src/modules/category/dto/category.model';
 import { CommentModel } from 'src/modules/comment/dto/comment.model';
 import { SourceModel } from 'src/modules/source/dto/source.model';
@@ -33,19 +33,19 @@ export class ContentModel {
   readTime?: number;
 
   @Field(() => UserModel)
-  user: User;
+  user: UserModel;
 
   @Field(() => SourceModel, { nullable: true })
-  source?: Source;
+  source?: SourceModel;
 
   @Field(() => CategoryModel, { nullable: true })
-  category?: Category;
+  category?: CategoryModel;
 
   @Field(() => [TagModel])
-  tags: Tag[];
+  tags: TagModel[];
 
   @Field(() => [CommentModel])
-  comments: Comment[];
+  comments: CommentModel[];
 }
 
 registerEnumType(ContentType, { name: 'ContentType' });
