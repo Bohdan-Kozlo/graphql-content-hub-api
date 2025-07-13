@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
-import { User } from 'prisma/generated';
+import { User, Role } from 'prisma/generated';
 
 describe('UserService', () => {
   let service: UserService;
@@ -18,7 +18,7 @@ describe('UserService', () => {
     updatedAt: new Date(),
     bio: null,
     avatarUrl: null,
-    role: ['USER'],
+    role: [Role.USER],
   };
 
   beforeEach(async () => {

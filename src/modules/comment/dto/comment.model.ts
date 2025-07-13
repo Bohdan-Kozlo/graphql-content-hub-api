@@ -15,10 +15,13 @@ export class CommentModel {
   user: User;
 
   @Field(() => CommentModel, { nullable: true })
-  perent?: Comment;
+  parent?: Comment;
 
   @Field(() => [CommentModel], { nullable: true })
   replies?: Comment[];
+
+  @Field()
+  text: string;
 
   @Field(() => Date)
   createdAt: Date;
