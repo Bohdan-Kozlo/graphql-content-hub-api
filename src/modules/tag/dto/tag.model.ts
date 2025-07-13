@@ -11,5 +11,5 @@ export class TagModel {
   name: string;
 
   @Field(() => [ContentModel])
-  contenst: Content[];
+  contents: Content[];
 }

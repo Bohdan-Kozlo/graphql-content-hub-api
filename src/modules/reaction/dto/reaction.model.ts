@@ -1,27 +1,21 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Comment, Content, User } from 'prisma/generated';
+import { Content, User, ReactionType } from 'prisma/generated';
 import { ContentModel } from 'src/modules/content/dto/content.model';
 import { UserModel } from 'src/modules/user/dto/user.output';
 
 @ObjectType()
-export class CommentModel {
+export class ReactionModel {
   @Field()
   id: string;
-
-  @Field(() => ContentModel)
-  content: Content;
 
   @Field(() => UserModel)
   user: User;
 
-  @Field(() => CommentModel, { nullable: true })
-  parent?: Comment;
+  @Field(() => ContentModel)
+  content: Content;
 
-  @Field(() => [CommentModel], { nullable: true })
-  replies?: Comment[];
-
-  @Field()
-  text: string;
+  @Field(() => String)
+  type: ReactionType;
 
   @Field(() => Date)
   createdAt: Date;
