@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { CreateReactionInput, ToggleReactionInput } from './dto/create-reaction.input';
+import { ToggleReactionInput } from './dto/create-reaction.input';
 import { ContentService } from '../content/content.service';
+import { ReactionType } from '@prisma/client';
 
 @Injectable()
 export class ReactionService {
@@ -99,13 +100,13 @@ export class ReactionService {
     return counts;
   }
 
-  async hasUserReacted(contentId: string, userId: string, type: string) {
+  async hasUserReacted(contentId: string, userId: string, type: ReactionType) {
     const reaction = await this.prismaService.reaction.findUnique({
       where: {
         userId_contentId_type: {
           userId,
           contentId,
-          type: type as any,
+          type,
         },
       },
     });

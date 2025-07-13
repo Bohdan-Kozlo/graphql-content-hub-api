@@ -5,6 +5,7 @@ import { ToggleReactionInput } from './dto/create-reaction.input';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from 'src/common/guards/access.guard';
 import { CurrentUser } from 'src/common/decorators/currentUser.decorator';
+import { ReactionType } from '@prisma/client';
 
 @Resolver(() => ReactionModel)
 export class ReactionResolver {
@@ -41,6 +42,6 @@ export class ReactionResolver {
     @Args('type') type: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.reactionService.hasUserReacted(contentId, userId, type);
+    return this.reactionService.hasUserReacted(contentId, userId, type as ReactionType);
   }
 }

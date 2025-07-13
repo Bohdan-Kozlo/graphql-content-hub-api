@@ -48,8 +48,7 @@ export class UserService {
     try {
       await this.prismaService.user.delete({ where: { id } });
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error: unknown) {
+    } catch {
       return false;
     }
   }

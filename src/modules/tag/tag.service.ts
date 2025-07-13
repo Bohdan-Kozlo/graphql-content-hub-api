@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateTagInput, UpdateTagInput } from './dto/create-tag.input';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TagService {
@@ -17,7 +18,7 @@ export class TagService {
         },
       });
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Tag with this name already exists');
       }
       throw error;
@@ -77,7 +78,7 @@ export class TagService {
         },
       });
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Tag with this name already exists');
       }
       throw error;
@@ -101,7 +102,7 @@ export class TagService {
   }
 
   async getPopularTags(limit: number = 10) {
-    const tags = await this.prismaService.tag.findMany({
+    return this.prismaService.tag.findMany({
       include: {
         _count: {
           select: { contents: true },
@@ -114,7 +115,5 @@ export class TagService {
       },
       take: limit,
     });
-
-    return tags;
   }
 }

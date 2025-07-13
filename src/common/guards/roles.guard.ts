@@ -1,11 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Reflector } from '@nestjs/core';
 import { Role } from 'prisma/generated';
 import { ROLES_KEY } from '../decorators/reles.decorator';
 import { GqlExecutionContext } from '@nestjs/graphql';
+
+interface GqlContextType {
+  req?: {
+    user?: {
+      roles?: Role[];
+    };
+  };
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -21,10 +27,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const ctx = GqlExecutionContext.create(context);
-    const user = ctx.getContext().req.user;
-
-    const hasRoles = requiredRoles.some((role) => user.roles === role);
-
-    return hasRoles;
+    const gqlCtx = ctx.getContext<GqlContextType>();
+    const userRoles = gqlCtx?.req?.user?.roles ?? [];
+    return requiredRoles.some((role) => userRoles.includes(role));
   }
 }
