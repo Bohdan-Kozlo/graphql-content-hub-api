@@ -12,10 +12,7 @@ export class ReactionResolver {
 
   @UseGuards(AccessGuard)
   @Mutation(() => Boolean)
-  async toggleReaction(
-    @Args('data') data: ToggleReactionInput,
-    @CurrentUser('id') userId: string,
-  ) {
+  async toggleReaction(@Args('data') data: ToggleReactionInput, @CurrentUser('id') userId: string) {
     const result = await this.reactionService.toggleReaction(data, userId);
     return !result.removed; // Return true if reaction was added, false if removed
   }

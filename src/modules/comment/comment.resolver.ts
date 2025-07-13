@@ -12,10 +12,7 @@ export class CommentResolver {
 
   @UseGuards(AccessGuard)
   @Mutation(() => CommentModel)
-  async createComment(
-    @Args('data') data: CreateCommentInput,
-    @CurrentUser('id') userId: string,
-  ) {
+  async createComment(@Args('data') data: CreateCommentInput, @CurrentUser('id') userId: string) {
     return this.commentService.create(data, userId);
   }
 
@@ -41,10 +38,7 @@ export class CommentResolver {
 
   @UseGuards(AccessGuard)
   @Mutation(() => Boolean)
-  async deleteComment(
-    @Args('id') id: string,
-    @CurrentUser('id') userId: string,
-  ) {
+  async deleteComment(@Args('id') id: string, @CurrentUser('id') userId: string) {
     return this.commentService.remove(id, userId);
   }
 }

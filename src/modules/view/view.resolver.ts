@@ -11,10 +11,7 @@ export class ViewResolver {
   constructor(private readonly viewService: ViewService) {}
 
   @Mutation(() => ViewModel)
-  async createView(
-    @Args('data') data: CreateViewInput,
-    @CurrentUser('id') userId?: string,
-  ) {
+  async createView(@Args('data') data: CreateViewInput, @CurrentUser('id') userId?: string) {
     return this.viewService.create(data, userId);
   }
 

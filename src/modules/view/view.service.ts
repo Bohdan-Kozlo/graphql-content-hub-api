@@ -83,9 +83,9 @@ export class ViewService {
   async getViewStats(contentId: string) {
     const totalViews = await this.getViewCount(contentId);
     const uniqueViews = await this.getUniqueViewCount(contentId);
-    
+
     const avgDuration = await this.prismaService.view.aggregate({
-      where: { 
+      where: {
         contentId,
         duration: { not: null },
       },
@@ -115,7 +115,7 @@ export class ViewService {
       take: limit,
     });
 
-    const contentIds = contentViews.map(cv => cv.contentId);
+    const contentIds = contentViews.map((cv) => cv.contentId);
     const contents = await this.prismaService.content.findMany({
       where: {
         id: { in: contentIds },
@@ -127,8 +127,8 @@ export class ViewService {
       },
     });
 
-    return contents.map(content => {
-      const viewCount = contentViews.find(cv => cv.contentId === content.id)?._count.contentId || 0;
+    return contents.map((content) => {
+      const viewCount = contentViews.find((cv) => cv.contentId === content.id)?._count.contentId || 0;
       return {
         ...content,
         viewCount,

@@ -42,10 +42,7 @@ export class TagResolver {
   @Roles(Role.EDITOR, Role.ADMIN)
   @UseGuards(AccessGuard, RolesGuard)
   @Mutation(() => TagModel)
-  async updateTag(
-    @Args('id') id: string,
-    @Args('data') data: UpdateTagInput,
-  ) {
+  async updateTag(@Args('id') id: string, @Args('data') data: UpdateTagInput) {
     return this.tagService.update(id, data);
   }
 
