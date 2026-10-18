@@ -3,8 +3,8 @@ import { ContentService } from './content.service';
 import { ContentModel } from './dto/content.model';
 import { CreateContentInput } from './dto/create-content.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { CurrentUser } from 'src/common/decorators/currentUser.decorator';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 import { UpdateContentInput } from './dto/update-content.input';
 
 @Resolver()

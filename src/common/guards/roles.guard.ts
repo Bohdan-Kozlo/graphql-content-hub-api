@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Reflector } from '@nestjs/core';
-import { Role } from 'prisma/generated';
+import { Role } from '../../../prisma/generated/client';
 import { ROLES_KEY } from '../decorators/reles.decorator';
 import { GqlExecutionContext } from '@nestjs/graphql';
 

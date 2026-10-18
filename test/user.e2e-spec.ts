@@ -4,13 +4,19 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { Role } from '../prisma/generated/client';
 
 describe('User Module (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let accessToken: string;
+  const adminEmail = 'e2e-admin@example.com';
+
+  const authorizedRequest = () =>
+    request(app.getHttpServer()).post('/graphql').set('Authorization', `Bearer ${accessToken}`);
 
   const sampleUser = {
     email: 'testuser@example.com',
@@ -27,18 +33,34 @@ describe('User Module (e2e)', () => {
     await app.init();
 
     prisma = app.get(PrismaService);
+    const signup = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `mutation { signup(data: { email: "${adminEmail}", username: "e2e-admin", password: "testPassword" }) { accessToken } }`,
+      });
+    expect(signup.body.errors).toBeUndefined();
+    await prisma.user.update({ where: { email: adminEmail }, data: { role: { set: [Role.ADMIN] } } });
+    const login = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `mutation { login(data: { email: "${adminEmail}", password: "testPassword" }) { accessToken } }`,
+      });
+    expect(login.body.errors).toBeUndefined();
+    accessToken = login.body.data.login.accessToken;
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({});
+    await prisma.user.deleteMany({
+      where: {
+        email: { in: [adminEmail, sampleUser.email, 'findme@example.com', 'update@example.com', 'delete@example.com'] },
+      },
+    });
     await app.close();
   });
 
   it('should create a new user', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const response = await authorizedRequest().send({
+      query: `
           mutation {
             createUser(data: {
               email: "${sampleUser.email}",
@@ -51,7 +73,7 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     if (response.status !== 200) {
       console.error(JSON.stringify(response.body, null, 2));
@@ -63,10 +85,8 @@ describe('User Module (e2e)', () => {
   });
 
   it('should return a list of users', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const response = await authorizedRequest().send({
+      query: `
           query {
             users {
               id
@@ -75,7 +95,7 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     if (response.status !== 200) {
       console.error(JSON.stringify(response.body, null, 2));
@@ -87,10 +107,8 @@ describe('User Module (e2e)', () => {
   });
 
   it('should return user by ID', async () => {
-    const createResponse = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const createResponse = await authorizedRequest().send({
+      query: `
           mutation {
             createUser(data: {
               email: "findme@example.com",
@@ -102,14 +120,12 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     const userId = createResponse.body.data.createUser.id;
 
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const response = await authorizedRequest().send({
+      query: `
           query {
             user(id: "${userId}") {
               id
@@ -118,17 +134,15 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.data.user.id).toBe(userId);
   });
 
   it('should update user information', async () => {
-    const createResponse = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const createResponse = await authorizedRequest().send({
+      query: `
           mutation {
             createUser(data: {
               email: "update@example.com",
@@ -139,14 +153,12 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     const userId = createResponse.body.data.createUser.id;
 
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const response = await authorizedRequest().send({
+      query: `
           mutation {
             updateUser(data: {
               id: "${userId}",
@@ -157,17 +169,15 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.data.updateUser.username).toBe('updated');
   });
 
   it('should delete a user', async () => {
-    const createResponse = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const createResponse = await authorizedRequest().send({
+      query: `
           mutation {
             createUser(data: {
               email: "delete@example.com",
@@ -178,19 +188,17 @@ describe('User Module (e2e)', () => {
             }
           }
         `,
-      });
+    });
 
     const userId = createResponse.body.data.createUser.id;
 
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `
+    const response = await authorizedRequest().send({
+      query: `
           mutation {
             deleteUser(id: "${userId}")
           }
         `,
-      });
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.data.deleteUser).toBe(true);

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TagService } from './tag.service';
 import { TagResolver } from './tag.resolver';
-import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],

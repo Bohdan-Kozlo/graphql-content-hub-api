@@ -1,10 +1,10 @@
 import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { ContentType } from 'prisma/generated';
-import { CategoryModel } from 'src/modules/category/dto/category.model';
-import { CommentModel } from 'src/modules/comment/dto/comment.model';
-import { SourceModel } from 'src/modules/source/dto/source.model';
-import { TagModel } from 'src/modules/tag/dto/tag.model';
-import { UserModel } from 'src/modules/user/dto/user.output';
+import { ContentType } from '../../../../prisma/generated/client';
+import { CategoryModel } from '../../category/dto/category.model';
+import { CommentModel } from '../../comment/dto/comment.model';
+import { SourceModel } from '../../source/dto/source.model';
+import { TagModel } from '../../tag/dto/tag.model';
+import { UserModel } from '../../user/dto/user.output';
 
 @ObjectType()
 export class ContentModel {

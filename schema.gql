@@ -27,7 +27,7 @@ type SourceModel {
 type TagModel {
   id: String!
   name: String!
-  contenst: [ContentModel!]!
+  contents: [ContentModel!]!
 }
 
 type ContentModel {
@@ -57,8 +57,9 @@ type CommentModel {
   id: String!
   content: ContentModel!
   user: UserModel!
-  perent: CommentModel
+  parent: CommentModel
   replies: [CommentModel!]
+  text: String!
   createdAt: DateTime!
 }
 
@@ -86,13 +87,64 @@ enum Role {
   ADMIN
 }
 
+type ReactionModel {
+  id: String!
+  user: UserModel!
+  content: ContentModel!
+  type: String!
+  createdAt: DateTime!
+}
+
+type ViewModel {
+  id: String!
+  user: UserModel
+  content: ContentModel!
+  viewedAt: DateTime!
+  duration: Float
+}
+
 type Query {
   users: [UserModel!]!
   user(id: String!): UserModel!
   profile: UserModel!
+  commentsByContent(contentId: String!): [CommentModel!]!
+  comment(id: String!): CommentModel!
   content(id: String!): ContentModel!
   categories: [CategoryModel!]!
   category(id: String!): CategoryModel!
+  tags: [TagModel!]!
+  tag(id: String!): TagModel!
+  tagByName(name: String!): TagModel
+  popularTags(limit: Float! = 10): [TagModel!]!
+  sources: [SourceModel!]!
+  source(id: String!): SourceModel!
+  createSource(data: CreateSourceInput!): SourceModel!
+  updateSource(id: String!, data: UpdateSourceInput!): SourceModel!
+  deleteSource(id: String!): Boolean!
+  reactionsByContent(contentId: String!): [ReactionModel!]!
+  myReactions: [ReactionModel!]!
+  reactionCounts(contentId: String!): String!
+  hasUserReacted(contentId: String!, type: String!): Boolean!
+  viewsByContent(contentId: String!): [ViewModel!]!
+  myViews: [ViewModel!]!
+  viewCount(contentId: String!): Float!
+  uniqueViewCount(contentId: String!): Float!
+  viewStats(contentId: String!): String!
+  mostViewedContent(limit: Float! = 10): String!
+}
+
+input CreateSourceInput {
+  name: String!
+  url: String!
+  description: String
+  logoUrl: String
+}
+
+input UpdateSourceInput {
+  name: String
+  url: String
+  description: String
+  logoUrl: String
 }
 
 type Mutation {
@@ -104,11 +156,19 @@ type Mutation {
   updateUser(data: UpdateUserInput!): UserModel!
   deleteUser(id: String!): Boolean!
   updateProfile(data: UpdateUserInput!): UserModel!
+  createComment(data: CreateCommentInput!): CommentModel!
+  updateComment(id: String!, data: UpdateCommentInput!): CommentModel!
+  deleteComment(id: String!): Boolean!
   createContent(data: CreateContentInput!): ContentModel!
   updateContent(data: UpdateContentInput!, id: String!): ContentModel!
   removeContent(id: String!): Boolean!
   createCategory(data: CreateCategoryInput!): CategoryModel!
   updateCategory(id: String!, data: UpdateCategoryInput!): CategoryModel!
+  createTag(data: CreateTagInput!): TagModel!
+  updateTag(id: String!, data: UpdateTagInput!): TagModel!
+  deleteTag(id: String!): Boolean!
+  toggleReaction(data: ToggleReactionInput!): Boolean!
+  createView(data: CreateViewInput!): ViewModel!
 }
 
 input LoginInput {
@@ -137,6 +197,16 @@ input UpdateUserInput {
   bio: String
   avatarUrl: String
   id: String!
+}
+
+input CreateCommentInput {
+  contentId: String!
+  text: String!
+  parentId: String
+}
+
+input UpdateCommentInput {
+  text: String
 }
 
 input CreateContentInput {
@@ -175,4 +245,22 @@ input CreateCategoryInput {
 input UpdateCategoryInput {
   name: String
   parentId: ID
+}
+
+input CreateTagInput {
+  name: String!
+}
+
+input UpdateTagInput {
+  name: String
+}
+
+input ToggleReactionInput {
+  contentId: String!
+  type: String!
+}
+
+input CreateViewInput {
+  contentId: String!
+  duration: Float
 }

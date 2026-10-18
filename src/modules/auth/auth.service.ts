@@ -3,7 +3,7 @@ import { RedisService } from '../../common/redis/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
-import { Role } from 'prisma/generated';
+import { Role } from '../../../prisma/generated/client';
 import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
 import { ConfigService } from '@nestjs/config';

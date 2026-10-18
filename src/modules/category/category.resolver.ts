@@ -4,10 +4,10 @@ import { CategoryModel } from './dto/category.model';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { UpdateCategoryInput } from './dto/update-category.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { Roles } from 'src/common/decorators/reles.decorator';
-import { Role } from 'prisma/generated';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { Roles } from '../../common/decorators/reles.decorator';
+import { Role } from '../../../prisma/generated/client';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Resolver()
 export class CategoryResolver {

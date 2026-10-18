@@ -3,10 +3,10 @@ import { TagService } from './tag.service';
 import { TagModel } from './dto/tag.model';
 import { CreateTagInput, UpdateTagInput } from './dto/create-tag.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { Roles } from 'src/common/decorators/reles.decorator';
-import { Role } from 'prisma/generated';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { Roles } from '../../common/decorators/reles.decorator';
+import { Role } from '../../../prisma/generated/client';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Resolver(() => TagModel)
 export class TagResolver {

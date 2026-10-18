@@ -50,23 +50,31 @@ A customizable content delivery platform built with **NestJS**, **GraphQL**, and
 - **Deployment**: Docker-ready
 
 ---
-## 📦 Installation
+## 📦 Local setup
 
-# Clone the repo
-git clone https://github.com/yourusername/graphql-content-hub-api.git
-cd graphql-content-hub-api
+Use Node.js 24.15 or later and Docker. Copy `.env.example` to `.env` and replace the JWT secrets before starting the API.
 
-# Install dependencies
-npm install
-
-# Set environment variables
-cp .env.example .env
-
-# Run Prisma migrations
-npx prisma migrate dev
-
-# Start the server
+```sh
+npm ci
+docker compose up -d postgres redis
+npm run db:generate
+npm run db:migrate
 npm run start:dev
+```
+
+The GraphQL endpoint and GraphiQL are available at `http://localhost:3000/graphql`. `npm run build` creates the production build, and `npm run start:prod` starts it.
+
+Prisma generates its client and types into `prisma/generated/`. Run `npm run db:generate` after changing `prisma/schema.prisma`; the generated directory is ignored by Git.
+
+Run unit tests with `npm test`. E2E tests use a separate database whose name ends in `_test`; create it and apply migrations before `npm run test:e2e`. By default, the test URL is derived from `DATABASE_URL` by appending `_test` to the database name. Set `TEST_DATABASE_URL` to use a different test database, also ending in `_test`. Never point E2E tests at a database containing data you need to keep.
+
+```powershell
+docker exec postgres_db psql -U postgres -d postgres -c "CREATE DATABASE content_hub_test"
+$env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/content_hub_test"
+npm run db:migrate
+Remove-Item Env:DATABASE_URL
+npm run test:e2e
+```
 
 ---
 

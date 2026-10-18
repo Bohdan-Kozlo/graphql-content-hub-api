@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { ContentType } from 'prisma/generated';
+import { ContentType } from '../../../../prisma/generated/client';
 
 @InputType()
 export class CreateContentInput {

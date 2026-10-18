@@ -3,8 +3,15 @@
 /node_modules
 /build
 
-prisma/generated
-prisma/migrations
+/prisma/generated/
+
+# Local planning and agent documentation
+/.scratch/
+/.skratch/
+/.ua/
+/docs/
+/AGENTS.md
+/GLOSSARY.md
 
 # Logs
 logs

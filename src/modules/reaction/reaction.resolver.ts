@@ -3,9 +3,9 @@ import { ReactionService } from './reaction.service';
 import { ReactionModel } from './dto/reaction.model';
 import { ToggleReactionInput } from './dto/create-reaction.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { CurrentUser } from 'src/common/decorators/currentUser.decorator';
-import { ReactionType } from '@prisma/client';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { CurrentUser } from '../../common/decorators/currentUser.decorator';
+import { ReactionType } from '../../../prisma/generated/client';
 
 @Resolver(() => ReactionModel)
 export class ReactionResolver {

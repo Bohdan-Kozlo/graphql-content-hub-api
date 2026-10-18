@@ -1,6 +1,6 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Category, Content } from 'prisma/generated';
-import { ContentModel } from 'src/modules/content/dto/content.model';
+import { Category, Content } from '../../../../prisma/generated/client';
+import { ContentModel } from '../../content/dto/content.model';
 
 @ObjectType()
 export class CategoryModel {

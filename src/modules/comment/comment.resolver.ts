@@ -3,8 +3,8 @@ import { CommentService } from './comment.service';
 import { CommentModel } from './dto/comment.model';
 import { CreateCommentInput, UpdateCommentInput } from './dto/create-comment.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { CurrentUser } from 'src/common/decorators/currentUser.decorator';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 
 @Resolver(() => CommentModel)
 export class CommentResolver {

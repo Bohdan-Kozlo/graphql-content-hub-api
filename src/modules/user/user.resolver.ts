@@ -3,11 +3,11 @@ import { UserService } from './user.service';
 import { UserModel } from './dto/user.output';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
-import { Roles } from 'src/common/decorators/reles.decorator';
-import { Role } from 'prisma/generated';
+import { Roles } from '../../common/decorators/reles.decorator';
+import { Role } from '../../../prisma/generated/client';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 
 @Resolver(() => UserModel)

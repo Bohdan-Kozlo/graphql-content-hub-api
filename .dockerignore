@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.git
+.idea
+.scratch
+.skratch
+.ua
+.tmp
+docs
+AGENTS.md
+GLOSSARY.md
+prisma/generated

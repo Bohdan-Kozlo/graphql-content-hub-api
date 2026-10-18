@@ -3,8 +3,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/common/prisma/prisma.service';
 
 describe('Auth Module (e2e)', () => {
   let app: INestApplication;
@@ -21,6 +22,7 @@ describe('Auth Module (e2e)', () => {
   });
 
   afterAll(async () => {
+    await app.get(PrismaService).user.deleteMany({ where: { email: 'testEmail' } });
     await app.close();
   });
 

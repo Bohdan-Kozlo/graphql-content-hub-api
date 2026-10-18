@@ -1,7 +1,7 @@
 import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
-import { Content, Role, Comment } from 'prisma/generated';
-import { CommentModel } from 'src/modules/comment/dto/comment.model';
-import { ContentModel } from 'src/modules/content/dto/content.model';
+import { Content, Role, Comment } from '../../../../prisma/generated/client';
+import { CommentModel } from '../../comment/dto/comment.model';
+import { ContentModel } from '../../content/dto/content.model';
 
 @ObjectType()
 export class UserModel {

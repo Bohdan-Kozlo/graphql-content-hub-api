@@ -1,5 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { ReactionType } from 'prisma/generated';
+import { ReactionType } from '../../../../prisma/generated/client';
 
 @InputType()
 export class CreateReactionInput {

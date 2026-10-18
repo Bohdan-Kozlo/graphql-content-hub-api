@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { Role } from 'prisma/generated';
+import { Role } from '../../../../prisma/generated/client';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {

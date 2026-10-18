@@ -3,10 +3,10 @@ import { SourceService } from './source.service';
 import { SourceModel } from './dto/source.model';
 import { CreateSourceInput, UpdateSourceInput } from './dto/create-source.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { Roles } from 'src/common/decorators/reles.decorator';
-import { Role } from 'prisma/generated';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { Roles } from '../../common/decorators/reles.decorator';
+import { Role } from '../../../prisma/generated/client';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @UseGuards(AccessGuard)
 @Resolver()

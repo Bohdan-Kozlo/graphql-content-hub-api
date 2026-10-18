@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma/prisma.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateTagInput, UpdateTagInput } from './dto/create-tag.input';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../prisma/generated/client';
 
 @Injectable()
 export class TagService {

@@ -1,7 +1,7 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Content, User } from 'prisma/generated';
-import { ContentModel } from 'src/modules/content/dto/content.model';
-import { UserModel } from 'src/modules/user/dto/user.output';
+import { Content, User } from '../../../../prisma/generated/client';
+import { ContentModel } from '../../content/dto/content.model';
+import { UserModel } from '../../user/dto/user.output';
 
 @ObjectType()
 export class ViewModel {

@@ -3,8 +3,8 @@ import { ViewService } from './view.service';
 import { ViewModel } from './dto/view.model';
 import { CreateViewInput } from './dto/create-view.input';
 import { UseGuards } from '@nestjs/common';
-import { AccessGuard } from 'src/common/guards/access.guard';
-import { CurrentUser } from 'src/common/decorators/currentUser.decorator';
+import { AccessGuard } from '../../common/guards/access.guard';
+import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 
 @Resolver(() => ViewModel)
 export class ViewResolver {

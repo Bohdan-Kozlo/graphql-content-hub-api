@@ -20,7 +20,7 @@ import { ViewModule } from './modules/view/view.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: 'schema.gql',
       driver: ApolloDriver,
-      playground: true,
+      graphiql: true,
       introspection: true,
     }),
     ConfigModule.forRoot({
