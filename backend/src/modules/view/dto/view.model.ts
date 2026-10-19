@@ -1,15 +1,15 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Content, User } from '../../../../prisma/generated/client';
+import { Content } from '../../../../prisma/generated/client';
 import { ContentModel } from '../../content/dto/content.model';
-import { UserModel } from '../../user/dto/user.output';
+import { PublicAuthorModel } from '../../content/dto/public-author.model';
 
 @ObjectType()
 export class ViewModel {
   @Field()
   id: string;
 
-  @Field(() => UserModel, { nullable: true })
-  user?: User;
+  @Field(() => PublicAuthorModel, { nullable: true })
+  user?: PublicAuthorModel;
 
   @Field(() => ContentModel)
   content: Content;

@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ToggleReactionInput } from './dto/create-reaction.input';
 import { ContentService } from '../content/content.service';
-import { ReactionType } from '../../../prisma/generated/client';
+import { ContentStatus, ReactionType } from '../../../prisma/generated/client';
+import { publicAuthorSelect, publicContentInclude } from '../content/public-content.include';
 
 @Injectable()
 export class ReactionService {
@@ -12,7 +13,7 @@ export class ReactionService {
   ) {}
 
   async toggleReaction(data: ToggleReactionInput, userId: string) {
-    const content = await this.contentService.findOneById(data.contentId);
+    const content = await this.contentService.findPublishedById(data.contentId);
     if (!content) {
       throw new NotFoundException('Content not found');
     }
@@ -44,8 +45,8 @@ export class ReactionService {
           type: data.type,
         },
         include: {
-          user: true,
-          content: true,
+          user: { select: publicAuthorSelect },
+          content: { include: publicContentInclude },
         },
       });
       return { removed: false, reaction };
@@ -54,10 +55,14 @@ export class ReactionService {
 
   async findByContentId(contentId: string) {
     return this.prismaService.reaction.findMany({
-      where: { contentId },
+      where: {
+        contentId,
+        type: { in: [ReactionType.LIKE, ReactionType.DISLIKE] },
+        content: { is: { status: ContentStatus.PUBLISHED } },
+      },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
       },
       orderBy: {
         createdAt: 'desc',
@@ -67,10 +72,10 @@ export class ReactionService {
 
   async findByUserId(userId: string) {
     return this.prismaService.reaction.findMany({
-      where: { userId },
+      where: { userId, content: { is: { status: ContentStatus.PUBLISHED } } },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
       },
       orderBy: {
         createdAt: 'desc',
@@ -81,7 +86,11 @@ export class ReactionService {
   async getReactionCounts(contentId: string) {
     const reactions = await this.prismaService.reaction.groupBy({
       by: ['type'],
-      where: { contentId },
+      where: {
+        contentId,
+        type: { in: [ReactionType.LIKE, ReactionType.DISLIKE] },
+        content: { is: { status: ContentStatus.PUBLISHED } },
+      },
       _count: {
         type: true,
       },
@@ -90,24 +99,24 @@ export class ReactionService {
     const counts = {
       LIKE: 0,
       DISLIKE: 0,
-      SAVE: 0,
     };
 
     reactions.forEach((reaction) => {
-      counts[reaction.type] = reaction._count.type;
+      if (reaction.type === ReactionType.LIKE || reaction.type === ReactionType.DISLIKE) {
+        counts[reaction.type] = reaction._count.type;
+      }
     });
 
     return counts;
   }
 
   async hasUserReacted(contentId: string, userId: string, type: ReactionType) {
-    const reaction = await this.prismaService.reaction.findUnique({
+    const reaction = await this.prismaService.reaction.findFirst({
       where: {
-        userId_contentId_type: {
-          userId,
-          contentId,
-          type,
-        },
+        userId,
+        contentId,
+        type,
+        content: { is: { status: ContentStatus.PUBLISHED } },
       },
     });
 

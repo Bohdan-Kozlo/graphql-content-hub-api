@@ -11,9 +11,9 @@ import { UpdateContentInput } from './dto/update-content.input';
 export class ContentResolver {
   constructor(private readonly contentService: ContentService) {}
 
-  @Query(() => ContentModel)
+  @Query(() => ContentModel, { nullable: true })
   async content(@Args('id') id: string) {
-    return await this.contentService.findOneById(id);
+    return await this.contentService.findPublishedById(id);
   }
 
   @UseGuards(AccessGuard)

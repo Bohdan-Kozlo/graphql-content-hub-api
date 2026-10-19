@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 import { CreateCommentInput, UpdateCommentInput } from './dto/create-comment.input';
+import { ContentStatus } from '../../../prisma/generated/client';
+import { publicAuthorSelect, publicContentInclude } from '../content/public-content.include';
 
 @Injectable()
 export class CommentService {
@@ -11,15 +13,15 @@ export class CommentService {
   ) {}
 
   async create(data: CreateCommentInput, userId: string) {
-    const content = await this.contentService.findOneById(data.contentId);
+    const content = await this.contentService.findPublishedById(data.contentId);
     if (!content) {
       throw new NotFoundException('Content not found');
     }
 
     // Validate parent comment if provided
     if (data.parentId) {
-      const parentComment = await this.prismaService.comment.findUnique({
-        where: { id: data.parentId },
+      const parentComment = await this.prismaService.comment.findFirst({
+        where: { id: data.parentId, contentId: data.contentId },
       });
       if (!parentComment) {
         throw new NotFoundException('Parent comment not found');
@@ -34,10 +36,10 @@ export class CommentService {
         userId,
       },
       include: {
-        user: true,
-        content: true,
-        replies: true,
-        parent: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
+        replies: { where: { content: { is: { status: ContentStatus.PUBLISHED } } } },
+        parent: { include: { user: { select: publicAuthorSelect }, content: { include: publicContentInclude } } },
       },
     });
   }
@@ -46,18 +48,20 @@ export class CommentService {
     return this.prismaService.comment.findMany({
       where: {
         contentId,
+        content: { is: { status: ContentStatus.PUBLISHED } },
         parentId: null, // Only top-level comments
       },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
         replies: {
+          where: { contentId, content: { is: { status: ContentStatus.PUBLISHED } } },
           include: {
-            user: true,
-            replies: true,
+            user: { select: publicAuthorSelect },
+            content: { include: publicContentInclude },
           },
         },
-        parent: true,
+        parent: { include: { user: { select: publicAuthorSelect }, content: { include: publicContentInclude } } },
       },
       orderBy: {
         createdAt: 'desc',
@@ -66,18 +70,19 @@ export class CommentService {
   }
 
   async findOne(id: string) {
-    const comment = await this.prismaService.comment.findUnique({
-      where: { id },
+    const comment = await this.prismaService.comment.findFirst({
+      where: { id, content: { is: { status: ContentStatus.PUBLISHED } } },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
         replies: {
+          where: { content: { is: { status: ContentStatus.PUBLISHED } } },
           include: {
-            user: true,
-            replies: true,
+            user: { select: publicAuthorSelect },
+            content: { include: publicContentInclude },
           },
         },
-        parent: true,
+        parent: { include: { user: { select: publicAuthorSelect }, content: { include: publicContentInclude } } },
       },
     });
 
@@ -85,7 +90,10 @@ export class CommentService {
       throw new NotFoundException('Comment not found');
     }
 
-    return comment;
+    return {
+      ...comment,
+      parent: comment.parent?.contentId === comment.contentId ? comment.parent : null,
+    };
   }
 
   async update(id: string, data: UpdateCommentInput, userId: string) {
@@ -104,10 +112,10 @@ export class CommentService {
       where: { id },
       data: { text: data.text },
       include: {
-        user: true,
-        content: true,
-        replies: true,
-        parent: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
+        replies: { where: { content: { is: { status: ContentStatus.PUBLISHED } } } },
+        parent: { include: { user: { select: publicAuthorSelect }, content: { include: publicContentInclude } } },
       },
     });
   }

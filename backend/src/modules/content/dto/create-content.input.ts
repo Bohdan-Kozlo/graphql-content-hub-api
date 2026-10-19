@@ -33,6 +33,6 @@ export class CreateContentInput {
   @Field(() => [String], { nullable: true })
   tagIds?: string[];
 
-  @Field(() => [String], { nullable: true })
-  categoryIds?: string[];
+  @Field({ nullable: true })
+  categoryId?: string;
 }

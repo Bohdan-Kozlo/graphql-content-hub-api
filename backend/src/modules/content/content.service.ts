@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateContentInput } from './dto/create-content.input';
 import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
+import { ContentStatus } from '../../../prisma/generated/client';
+import { publicContentInclude } from './public-content.include';
 
 @Injectable()
 export class ContentService {
@@ -19,41 +21,31 @@ export class ContentService {
 
     return this.prismaService.content.create({
       data: {
-        ...data,
-        authorId: userId,
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        body: data.body,
+        mediaUrl: data.mediaUrl,
+        duration: data.duration,
+        thumbnail: data.thumbnail,
+        readTime: data.readTime,
+        author: { connect: { id: userId } },
+        category: data.categoryId ? { connect: { id: data.categoryId } } : undefined,
+        source: data.sourceId ? { connect: { id: data.sourceId } } : undefined,
+        tags: data.tagIds ? { connect: data.tagIds.map((id) => ({ id })) } : undefined,
       },
-      include: {
-        author: true,
-        category: true,
-        source: true,
-        tags: true,
-        comments: true,
-        reactions: true,
-        views: true,
-      },
+      include: publicContentInclude,
     });
   }
 
-  async findOneById(id: string) {
-    const content = await this.prismaService.content.findUnique({
+  async findPublishedById(id: string) {
+    const content = await this.prismaService.content.findFirst({
       where: {
         id,
+        status: ContentStatus.PUBLISHED,
       },
-      include: {
-        author: true,
-        category: true,
-        source: true,
-        tags: true,
-        comments: true,
-        reactions: true,
-        views: true,
-      },
+      include: publicContentInclude,
     });
-
-    if (!content) {
-      throw new NotFoundException(`Content with ID ${id} not found`);
-    }
-
     return content;
   }
 
@@ -73,16 +65,30 @@ export class ContentService {
       where: {
         id,
       },
-      data,
-      include: {
-        author: true,
-        category: true,
-        source: true,
-        tags: true,
-        comments: true,
-        reactions: true,
-        views: true,
+      data: {
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        body: data.body,
+        mediaUrl: data.mediaUrl,
+        duration: data.duration,
+        thumbnail: data.thumbnail,
+        readTime: data.readTime,
+        category:
+          data.categoryId === undefined
+            ? undefined
+            : data.categoryId
+              ? { connect: { id: data.categoryId } }
+              : { disconnect: true },
+        source:
+          data.sourceId === undefined
+            ? undefined
+            : data.sourceId
+              ? { connect: { id: data.sourceId } }
+              : { disconnect: true },
+        tags: data.tagIds ? { set: data.tagIds.map((id) => ({ id })) } : undefined,
       },
+      include: publicContentInclude,
     });
   }
 

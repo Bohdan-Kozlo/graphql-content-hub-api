@@ -12,7 +12,6 @@ type CategoryModel {
   name: String!
   parent: CategoryModel
   children: [CategoryModel!]
-  contents: [ContentModel!]!
 }
 
 type SourceModel {
@@ -21,16 +20,22 @@ type SourceModel {
   url: String!
   description: String
   logoUrl: String
-  content: [ContentModel!]!
 }
 
 type TagModel {
   id: String!
   name: String!
-  contents: [ContentModel!]!
+}
+
+type PublicAuthorModel {
+  id: String!
+  username: String!
+  bio: String
+  avatarUrl: String
 }
 
 type ContentModel {
+  id: String!
   title: String!
   description: String!
   type: ContentType!
@@ -39,11 +44,12 @@ type ContentModel {
   duration: Int
   thumbnail: String
   readTime: Int
-  user: UserModel!
+  status: ContentStatus!
+  publishedAt: DateTime
+  author: PublicAuthorModel!
   source: SourceModel
   category: CategoryModel
   tags: [TagModel!]!
-  comments: [CommentModel!]!
 }
 
 enum ContentType {
@@ -53,20 +59,25 @@ enum ContentType {
   NEWS
 }
 
-type CommentModel {
-  id: String!
-  content: ContentModel!
-  user: UserModel!
-  parent: CommentModel
-  replies: [CommentModel!]
-  text: String!
-  createdAt: DateTime!
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
 }
 
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type CommentModel {
+  id: String!
+  content: ContentModel!
+  user: PublicAuthorModel!
+  parent: CommentModel
+  replies: [CommentModel!]
+  text: String!
+  createdAt: DateTime!
+}
 
 type UserModel {
   id: String!
@@ -89,7 +100,7 @@ enum Role {
 
 type ReactionModel {
   id: String!
-  user: UserModel!
+  user: PublicAuthorModel!
   content: ContentModel!
   type: String!
   createdAt: DateTime!
@@ -97,7 +108,7 @@ type ReactionModel {
 
 type ViewModel {
   id: String!
-  user: UserModel
+  user: PublicAuthorModel
   content: ContentModel!
   viewedAt: DateTime!
   duration: Float
@@ -109,7 +120,7 @@ type Query {
   profile: UserModel!
   commentsByContent(contentId: String!): [CommentModel!]!
   comment(id: String!): CommentModel!
-  content(id: String!): ContentModel!
+  content(id: String!): ContentModel
   categories: [CategoryModel!]!
   category(id: String!): CategoryModel!
   tags: [TagModel!]!
@@ -220,7 +231,7 @@ input CreateContentInput {
   readTime: Int
   sourceId: String
   tagIds: [String!]
-  categoryIds: [String!]
+  categoryId: String
 }
 
 input UpdateContentInput {
@@ -234,7 +245,7 @@ input UpdateContentInput {
   readTime: Int
   sourceId: String
   tagIds: [String!]
-  categoryIds: [String!]
+  categoryId: String
 }
 
 input CreateCategoryInput {

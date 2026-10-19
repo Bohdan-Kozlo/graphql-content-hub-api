@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateViewInput } from './dto/create-view.input';
 import { ContentService } from '../content/content.service';
+import { ContentStatus } from '../../../prisma/generated/client';
+import { publicAuthorSelect, publicContentInclude } from '../content/public-content.include';
 
 @Injectable()
 export class ViewService {
@@ -11,7 +13,7 @@ export class ViewService {
   ) {}
 
   async create(data: CreateViewInput, userId?: string) {
-    const content = await this.contentService.findOneById(data.contentId);
+    const content = await this.contentService.findPublishedById(data.contentId);
     if (!content) {
       throw new NotFoundException('Content not found');
     }
@@ -23,18 +25,18 @@ export class ViewService {
         duration: data.duration,
       },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
       },
     });
   }
 
   async findByContentId(contentId: string) {
     return this.prismaService.view.findMany({
-      where: { contentId },
+      where: { contentId, content: { is: { status: ContentStatus.PUBLISHED } } },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
       },
       orderBy: {
         viewedAt: 'desc',
@@ -44,10 +46,10 @@ export class ViewService {
 
   async findByUserId(userId: string) {
     return this.prismaService.view.findMany({
-      where: { userId },
+      where: { userId, content: { is: { status: ContentStatus.PUBLISHED } } },
       include: {
-        user: true,
-        content: true,
+        user: { select: publicAuthorSelect },
+        content: { include: publicContentInclude },
       },
       orderBy: {
         viewedAt: 'desc',
@@ -57,7 +59,7 @@ export class ViewService {
 
   async getViewCount(contentId: string) {
     return this.prismaService.view.count({
-      where: { contentId },
+      where: { contentId, content: { is: { status: ContentStatus.PUBLISHED } } },
     });
   }
 
@@ -67,6 +69,7 @@ export class ViewService {
       where: {
         contentId,
         userId: { not: null },
+        content: { is: { status: ContentStatus.PUBLISHED } },
       },
     });
 
@@ -74,6 +77,7 @@ export class ViewService {
       where: {
         contentId,
         userId: null,
+        content: { is: { status: ContentStatus.PUBLISHED } },
       },
     });
 
@@ -88,6 +92,7 @@ export class ViewService {
       where: {
         contentId,
         duration: { not: null },
+        content: { is: { status: ContentStatus.PUBLISHED } },
       },
       _avg: {
         duration: true,
@@ -104,6 +109,7 @@ export class ViewService {
   async getMostViewedContent(limit: number = 10) {
     const contentViews = await this.prismaService.view.groupBy({
       by: ['contentId'],
+      where: { content: { is: { status: ContentStatus.PUBLISHED } } },
       _count: {
         contentId: true,
       },
@@ -119,11 +125,13 @@ export class ViewService {
     const contents = await this.prismaService.content.findMany({
       where: {
         id: { in: contentIds },
+        status: ContentStatus.PUBLISHED,
       },
-      include: {
-        author: true,
-        category: true,
-        tags: true,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        publishedAt: true,
       },
     });
 

@@ -5,6 +5,9 @@ import { CreateViewInput } from './dto/create-view.input';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
+import { Roles } from '../../common/decorators/reles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Role } from '../../../prisma/generated/client';
 
 @Resolver(() => ViewModel)
 export class ViewResolver {
@@ -15,6 +18,8 @@ export class ViewResolver {
     return this.viewService.create(data, userId);
   }
 
+  @Roles(Role.ADMIN)
+  @UseGuards(AccessGuard, RolesGuard)
   @Query(() => [ViewModel])
   async viewsByContent(@Args('contentId') contentId: string) {
     return this.viewService.findByContentId(contentId);
@@ -42,6 +47,8 @@ export class ViewResolver {
     return JSON.stringify(stats);
   }
 
+  @Roles(Role.ADMIN)
+  @UseGuards(AccessGuard, RolesGuard)
   @Query(() => String)
   async mostViewedContent(@Args('limit', { defaultValue: 10 }) limit: number) {
     const content = await this.viewService.getMostViewedContent(limit);

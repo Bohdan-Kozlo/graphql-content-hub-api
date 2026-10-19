@@ -1,0 +1,32 @@
+query PublicContent($id: String!) {
+  content(id: $id) {
+    id
+    title
+    description
+    type
+    body
+    mediaUrl
+    thumbnail
+    status
+    publishedAt
+    author {
+      id
+      username
+      bio
+      avatarUrl
+    }
+    category {
+      id
+      name
+    }
+    tags {
+      id
+      name
+    }
+    source {
+      id
+      name
+      url
+    }
+  }
+}

@@ -1,6 +1,5 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Category, Content } from '../../../../prisma/generated/client';
-import { ContentModel } from '../../content/dto/content.model';
+import { Category } from '../../../../prisma/generated/client';
 
 @ObjectType()
 export class CategoryModel {
@@ -15,7 +14,4 @@ export class CategoryModel {
 
   @Field(() => [CategoryModel], { nullable: true })
   children?: Category[];
-
-  @Field(() => [ContentModel])
-  contents: Content[];
 }

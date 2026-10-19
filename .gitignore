@@ -28,6 +28,8 @@ lerna-debug.log*
 
 # Tests
 coverage/
+/frontend/test-results/
+/frontend/playwright-report/
 *.tsbuildinfo
 /.nyc_output
 

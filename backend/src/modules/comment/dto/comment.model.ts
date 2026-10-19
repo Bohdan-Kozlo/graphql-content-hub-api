@@ -1,7 +1,7 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Comment, Content, User } from '../../../../prisma/generated/client';
+import { Comment, Content } from '../../../../prisma/generated/client';
 import { ContentModel } from '../../content/dto/content.model';
-import { UserModel } from '../../user/dto/user.output';
+import { PublicAuthorModel } from '../../content/dto/public-author.model';
 
 @ObjectType()
 export class CommentModel {
@@ -11,8 +11,8 @@ export class CommentModel {
   @Field(() => ContentModel)
   content: Content;
 
-  @Field(() => UserModel)
-  user: User;
+  @Field(() => PublicAuthorModel)
+  user: PublicAuthorModel;
 
   @Field(() => CommentModel, { nullable: true })
   parent?: Comment;

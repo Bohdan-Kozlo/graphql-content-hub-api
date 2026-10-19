@@ -71,6 +71,8 @@ model Content {
   duration     Int?
   thumbnail    String?
   readTime     Int?
+  status       ContentStatus  @default(DRAFT)
+  publishedAt  DateTime?
 
   author       User           @relation("AuthorContents", fields: [authorId], references: [id])
   authorId     String
@@ -88,6 +90,13 @@ model Content {
 
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum ContentType {

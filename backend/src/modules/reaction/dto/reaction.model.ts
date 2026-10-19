@@ -1,15 +1,15 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Content, User, ReactionType } from '../../../../prisma/generated/client';
+import { Content, ReactionType } from '../../../../prisma/generated/client';
 import { ContentModel } from '../../content/dto/content.model';
-import { UserModel } from '../../user/dto/user.output';
+import { PublicAuthorModel } from '../../content/dto/public-author.model';
 
 @ObjectType()
 export class ReactionModel {
   @Field()
   id: string;
 
-  @Field(() => UserModel)
-  user: User;
+  @Field(() => PublicAuthorModel)
+  user: PublicAuthorModel;
 
   @Field(() => ContentModel)
   content: Content;

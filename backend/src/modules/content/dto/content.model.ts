@@ -1,13 +1,15 @@
 import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { ContentType } from '../../../../prisma/generated/client';
+import { ContentStatus, ContentType } from '../../../../prisma/generated/client';
 import { CategoryModel } from '../../category/dto/category.model';
-import { CommentModel } from '../../comment/dto/comment.model';
 import { SourceModel } from '../../source/dto/source.model';
 import { TagModel } from '../../tag/dto/tag.model';
-import { UserModel } from '../../user/dto/user.output';
+import { PublicAuthorModel } from './public-author.model';
 
 @ObjectType()
 export class ContentModel {
+  @Field()
+  id: string;
+
   @Field()
   title: string;
 
@@ -32,8 +34,14 @@ export class ContentModel {
   @Field(() => Int, { nullable: true })
   readTime?: number;
 
-  @Field(() => UserModel)
-  user: UserModel;
+  @Field(() => ContentStatus)
+  status: ContentStatus;
+
+  @Field(() => Date, { nullable: true })
+  publishedAt?: Date;
+
+  @Field(() => PublicAuthorModel)
+  author: PublicAuthorModel;
 
   @Field(() => SourceModel, { nullable: true })
   source?: SourceModel;
@@ -43,9 +51,7 @@ export class ContentModel {
 
   @Field(() => [TagModel])
   tags: TagModel[];
-
-  @Field(() => [CommentModel])
-  comments: CommentModel[];
 }
 
 registerEnumType(ContentType, { name: 'ContentType' });
+registerEnumType(ContentStatus, { name: 'ContentStatus' });
