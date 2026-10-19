@@ -1,0 +1,48 @@
+/* Signal direction, selected for Content Hub on 2026-10-19. */
+@theme inline {
+  --color-hub-page: var(--hub-page);
+  --color-hub-surface: var(--hub-surface);
+  --color-hub-ink: var(--hub-ink);
+  --color-hub-muted: var(--hub-muted);
+  --color-hub-line: var(--hub-line);
+  --color-hub-accent: var(--hub-accent);
+  --color-hub-lilac: var(--hub-lilac);
+  --color-hub-peach: var(--hub-peach);
+  --font-hub-display: 'Outfit', 'DM Sans', sans-serif;
+  --font-hub-body: 'DM Sans', sans-serif;
+}
+
+:root {
+  --hub-page: #f8f6f9;
+  --hub-surface: #eee9f0;
+  --hub-ink: #30263b;
+  --hub-muted: #756b7b;
+  --hub-line: #ddd3e0;
+  --hub-accent: #704b80;
+  --hub-lilac: #d6c5dc;
+  --hub-peach: #e9ab8e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --hub-page: #1e1a25;
+    --hub-surface: #302839;
+    --hub-ink: #f7f0f8;
+    --hub-muted: #c5b8c9;
+    --hub-line: #4c4054;
+    --hub-accent: #d1abdc;
+    --hub-lilac: #51405d;
+    --hub-peach: #b9796c;
+  }
+}
+
+:root[data-theme='dark'] {
+  --hub-page: #1e1a25;
+  --hub-surface: #302839;
+  --hub-ink: #f7f0f8;
+  --hub-muted: #c5b8c9;
+  --hub-line: #4c4054;
+  --hub-accent: #d1abdc;
+  --hub-lilac: #51405d;
+  --hub-peach: #b9796c;
+}
