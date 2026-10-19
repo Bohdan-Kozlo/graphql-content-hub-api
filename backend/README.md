@@ -66,6 +66,12 @@ The GraphQL endpoint and GraphiQL are available at `http://localhost:3000/graphq
 
 Prisma generates its client and types into `prisma/generated/`. Run `npm run db:generate` after changing `prisma/schema.prisma`; the generated directory is ignored by Git.
 
+### Demo data
+
+After applying migrations, run `npm run db:seed` from `backend/`. This explicitly runs Prisma's `prisma/seed.ts` against `DATABASE_URL`; Prisma 7 does not seed automatically during migration. The seed adds 16 published stories and two drafts across all four content types, along with sample authors, a reader, categories, tags, sources, comments, reactions, views, and a subscription. It uses stable IDs and can be run again without duplicating records or overwriting edited stories. It refuses to run when `NODE_ENV=production`.
+
+The demo accounts are `maya.editor@content-hub.example`, `jordan.editor@content-hub.example`, and `sam.reader@content-hub.example`. By default they get random, unknown passwords. To sign in as these accounts, set `SEED_DEMO_PASSWORD` to a password of at least 12 characters and run the seed again; this updates only the demo accounts' password hashes.
+
 Run unit tests with `npm test`. E2E tests use a separate database whose name ends in `_test`; create it and apply migrations before `npm run test:e2e`. By default, the test URL is derived from `DATABASE_URL` by appending `_test` to the database name. Set `TEST_DATABASE_URL` to use a different test database, also ending in `_test`. Never point E2E tests at a database containing data you need to keep.
 
 ```powershell
