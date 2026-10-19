@@ -49,6 +49,35 @@ export class ContentService {
     return content;
   }
 
+  async findPublishedPage(first: number, after?: string) {
+    if (!Number.isInteger(first) || first < 1 || first > 30) {
+      throw new BadRequestException('Page size must be between 1 and 30');
+    }
+
+    if (after) {
+      const cursor = await this.prismaService.content.findFirst({
+        where: { id: after, status: ContentStatus.PUBLISHED },
+        select: { id: true },
+      });
+      if (!cursor) throw new BadRequestException('Invalid catalog cursor');
+    }
+
+    const contents = await this.prismaService.content.findMany({
+      where: { status: ContentStatus.PUBLISHED },
+      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      take: first + 1,
+      ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+      include: publicContentInclude,
+    });
+    const items = contents.slice(0, first);
+
+    return {
+      items,
+      endCursor: items.at(-1)?.id ?? null,
+      hasMore: contents.length > first,
+    };
+  }
+
   async update(id: string, data: UpdateContentInput, userId: string) {
     const contentBelongsToUser = await this.prismaService.content.findFirst({
       where: {

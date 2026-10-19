@@ -9,9 +9,10 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/graphql` to the backend. Published Content is available at
-`/content/:id`; unpublished and missing IDs share an unavailable state.
-The root route is a placeholder until the public catalog ticket is implemented.
+Vite proxies `/graphql` to the backend. The public catalog at `/` loads Published
+Content newest first in pages. Each card links to `/content/:id`; unpublished and
+missing IDs share an unavailable state. The API's `publishedContents(first, after)`
+query returns up to 30 items per page, an `endCursor`, and `hasMore`.
 
 ```sh
 npm run codegen     # typed operations from ../backend/schema.gql

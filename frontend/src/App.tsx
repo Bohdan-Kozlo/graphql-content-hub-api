@@ -5,6 +5,9 @@ import { Link, Route, Routes } from 'react-router'
 const PublicContentPage = lazy(
   () => import('./features/content/PublicContentPage'),
 )
+const PublicCatalogPage = lazy(
+  () => import('./features/catalog/PublicCatalogPage'),
+)
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -27,23 +30,6 @@ function Shell({ children }: { children: ReactNode }) {
       <footer className="mt-20 border-t border-hub-line px-5 py-8 text-center text-sm text-hub-muted">
         Content Hub · A place for ideas, stories, and perspectives
       </footer>
-    </div>
-  )
-}
-
-function Home() {
-  return (
-    <div className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
-      <p className="mb-5 text-xs font-bold tracking-[0.25em] text-hub-accent uppercase">
-        Welcome to Content Hub
-      </p>
-      <h1 className="max-w-2xl font-hub-display text-5xl font-semibold tracking-tight sm:text-7xl">
-        Ideas for curious minds.
-      </h1>
-      <p className="mt-7 max-w-xl text-lg leading-8 text-hub-muted">
-        The public catalog is being prepared. Published stories are available at
-        their direct links.
-      </p>
     </div>
   )
 }
@@ -73,7 +59,7 @@ export default function App() {
         }
       >
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<PublicCatalogPage />} />
           <Route path="/content/:id" element={<PublicContentPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -98,6 +98,12 @@ enum Role {
   ADMIN
 }
 
+type ContentPageModel {
+  items: [ContentModel!]!
+  endCursor: String
+  hasMore: Boolean!
+}
+
 type ReactionModel {
   id: String!
   user: PublicAuthorModel!
@@ -121,6 +127,7 @@ type Query {
   commentsByContent(contentId: String!): [CommentModel!]!
   comment(id: String!): CommentModel!
   content(id: String!): ContentModel
+  publishedContents(first: Int! = 12, after: String): ContentPageModel!
   categories: [CategoryModel!]!
   category(id: String!): CategoryModel!
   tags: [TagModel!]!

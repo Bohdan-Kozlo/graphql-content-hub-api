@@ -1,0 +1,20 @@
+query PublicCatalog($first: Int!, $after: String) {
+  publishedContents(first: $first, after: $after) {
+    items {
+      id
+      title
+      description
+      type
+      thumbnail
+      publishedAt
+      author {
+        username
+      }
+      category {
+        name
+      }
+    }
+    endCursor
+    hasMore
+  }
+}

@@ -14,9 +14,11 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "query PublicCatalog($first: Int!, $after: String) {\n  publishedContents(first: $first, after: $after) {\n    items {\n      id\n      title\n      description\n      type\n      thumbnail\n      publishedAt\n      author {\n        username\n      }\n      category {\n        name\n      }\n    }\n    endCursor\n    hasMore\n  }\n}": typeof types.PublicCatalogDocument,
     "query PublicContent($id: String!) {\n  content(id: $id) {\n    id\n    title\n    description\n    type\n    body\n    mediaUrl\n    thumbnail\n    status\n    publishedAt\n    author {\n      id\n      username\n      bio\n      avatarUrl\n    }\n    category {\n      id\n      name\n    }\n    tags {\n      id\n      name\n    }\n    source {\n      id\n      name\n      url\n    }\n  }\n}": typeof types.PublicContentDocument,
 };
 const documents: Documents = {
+    "query PublicCatalog($first: Int!, $after: String) {\n  publishedContents(first: $first, after: $after) {\n    items {\n      id\n      title\n      description\n      type\n      thumbnail\n      publishedAt\n      author {\n        username\n      }\n      category {\n        name\n      }\n    }\n    endCursor\n    hasMore\n  }\n}": types.PublicCatalogDocument,
     "query PublicContent($id: String!) {\n  content(id: $id) {\n    id\n    title\n    description\n    type\n    body\n    mediaUrl\n    thumbnail\n    status\n    publishedAt\n    author {\n      id\n      username\n      bio\n      avatarUrl\n    }\n    category {\n      id\n      name\n    }\n    tags {\n      id\n      name\n    }\n    source {\n      id\n      name\n      url\n    }\n  }\n}": types.PublicContentDocument,
 };
 
@@ -34,6 +36,10 @@ const documents: Documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query PublicCatalog($first: Int!, $after: String) {\n  publishedContents(first: $first, after: $after) {\n    items {\n      id\n      title\n      description\n      type\n      thumbnail\n      publishedAt\n      author {\n        username\n      }\n      category {\n        name\n      }\n    }\n    endCursor\n    hasMore\n  }\n}"): (typeof documents)["query PublicCatalog($first: Int!, $after: String) {\n  publishedContents(first: $first, after: $after) {\n    items {\n      id\n      title\n      description\n      type\n      thumbnail\n      publishedAt\n      author {\n        username\n      }\n      category {\n        name\n      }\n    }\n    endCursor\n    hasMore\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -1,18 +1,7 @@
 import { useQuery } from '@apollo/client/react'
 import { Link, useParams } from 'react-router'
 import { PublicContentDocument } from '../../gql/graphql'
-
-function externalUrl(value: string | null | undefined) {
-  if (!value) return null
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' || url.protocol === 'http:'
-      ? url.href
-      : null
-  } catch {
-    return null
-  }
-}
+import { externalUrl } from '../../shared/external-url'
 
 function StatusMessage({ title, message }: { title: string; message: string }) {
   return (
