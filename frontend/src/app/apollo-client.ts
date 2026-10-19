@@ -8,7 +8,7 @@ export const client = new ApolloClient({
       Query: {
         fields: {
           publishedContents: {
-            keyArgs: false,
+            keyArgs: ['search', 'type', 'categoryId', 'tagId', 'authorId'],
             merge(existing, incoming, { args, readField }) {
               if (!args?.after || !existing) return incoming
               const seen = new Set(

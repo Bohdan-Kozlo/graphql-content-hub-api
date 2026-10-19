@@ -3,8 +3,16 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateContentInput } from './dto/create-content.input';
 import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
-import { ContentStatus } from '../../../prisma/generated/client';
+import { ContentStatus, ContentType, Prisma } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
+
+type CatalogFilters = {
+  search?: string;
+  type?: ContentType;
+  categoryId?: string;
+  tagId?: string;
+  authorId?: string;
+};
 
 @Injectable()
 export class ContentService {
@@ -49,21 +57,39 @@ export class ContentService {
     return content;
   }
 
-  async findPublishedPage(first: number, after?: string) {
+  async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}) {
     if (!Number.isInteger(first) || first < 1 || first > 30) {
       throw new BadRequestException('Page size must be between 1 and 30');
     }
 
+    const term = filters.search?.trim();
+    const where: Prisma.ContentWhereInput = {
+      status: ContentStatus.PUBLISHED,
+      ...(term
+        ? {
+            OR: [
+              { title: { contains: term, mode: 'insensitive' } },
+              { description: { contains: term, mode: 'insensitive' } },
+              { body: { contains: term, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(filters.type ? { type: filters.type } : {}),
+      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+      ...(filters.tagId ? { tags: { some: { id: filters.tagId } } } : {}),
+      ...(filters.authorId ? { authorId: filters.authorId } : {}),
+    };
+
     if (after) {
       const cursor = await this.prismaService.content.findFirst({
-        where: { id: after, status: ContentStatus.PUBLISHED },
+        where: { ...where, id: after },
         select: { id: true },
       });
       if (!cursor) throw new BadRequestException('Invalid catalog cursor');
     }
 
     const contents = await this.prismaService.content.findMany({
-      where: { status: ContentStatus.PUBLISHED },
+      where,
       orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
       take: first + 1,
       ...(after ? { cursor: { id: after }, skip: 1 } : {}),

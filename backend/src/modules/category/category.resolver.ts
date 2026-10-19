@@ -13,7 +13,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 export class CategoryResolver {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @UseGuards(AccessGuard)
   @Query(() => [CategoryModel])
   async categories() {
     return this.categoryService.findAll();
@@ -25,7 +24,6 @@ export class CategoryResolver {
     return this.categoryService.create(data);
   }
 
-  @UseGuards(AccessGuard)
   @Query(() => CategoryModel)
   async category(@Args('id') id: string) {
     return this.categoryService.findOne(id);

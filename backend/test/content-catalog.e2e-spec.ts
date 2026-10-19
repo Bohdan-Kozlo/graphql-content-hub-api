@@ -17,8 +17,8 @@ describe('Public catalog GraphQL HTTP', () => {
   let authorId: string;
   const contentIds: string[] = [];
 
-  const query = `query Catalog($first: Int!, $after: String) {
-    publishedContents(first: $first, after: $after) {
+  const query = `query Catalog($first: Int!, $after: String, $search: String, $type: ContentType, $categoryId: String, $tagId: String, $authorId: String) {
+    publishedContents(first: $first, after: $after, search: $search, type: $type, categoryId: $categoryId, tagId: $tagId, authorId: $authorId) {
       items { id title type publishedAt author { username } }
       endCursor
       hasMore
@@ -104,6 +104,103 @@ describe('Public catalog GraphQL HTTP', () => {
       const response = await request(app.getHttpServer()).post('/graphql').send({ query, variables });
       expect(response.body.errors).toBeDefined();
       expect(JSON.stringify(response.body)).not.toContain('Secret draft');
+    }
+  });
+
+  it('searches title, description and body while combining public filters and pagination', async () => {
+    const category = await prisma.category.create({ data: { name: `Topics ${marker}` } });
+    const child = await prisma.category.create({ data: { name: `Nested ${marker}`, parentId: category.id } });
+    const tag = await prisma.tag.create({ data: { name: `Focus ${marker}` } });
+    try {
+      await prisma.content.update({
+        where: { id: `${marker}-article` },
+        data: { title: `Orbit ${marker}`, categoryId: category.id, tags: { connect: { id: tag.id } } },
+      });
+      await prisma.content.update({
+        where: { id: `${marker}-video` },
+        data: { description: `Orbit ${marker}`, categoryId: category.id, tags: { connect: { id: tag.id } } },
+      });
+      await prisma.content.update({
+        where: { id: `${marker}-podcast` },
+        data: { body: `Orbit ${marker}`, categoryId: category.id, tags: { connect: { id: tag.id } } },
+      });
+      await prisma.content.update({
+        where: { id: contentIds[4] },
+        data: { title: `Orbit ${marker}`, categoryId: category.id, tags: { connect: { id: tag.id } } },
+      });
+
+      const first = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query,
+          variables: { first: 2, search: `orbit ${marker}`, categoryId: category.id, tagId: tag.id },
+        });
+      expect(first.body.errors).toBeUndefined();
+      const firstPage = first.body.data.publishedContents as CatalogPage;
+      expect(firstPage.items.map((item) => item.id)).toEqual([`${marker}-article`, `${marker}-video`]);
+      const second = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query,
+          variables: {
+            first: 2,
+            after: firstPage.endCursor,
+            search: `orbit ${marker}`,
+            categoryId: category.id,
+            tagId: tag.id,
+          },
+        });
+      expect(second.body.errors).toBeUndefined();
+      const secondPage = second.body.data.publishedContents as CatalogPage;
+      expect(secondPage.items.map((item) => item.id)).toEqual([`${marker}-podcast`]);
+      expect(JSON.stringify({ firstPage, secondPage })).not.toContain('Secret draft');
+
+      const typed = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query,
+          variables: { first: 12, search: `orbit ${marker}`, type: 'VIDEO', categoryId: category.id, tagId: tag.id },
+        });
+      expect(typed.body.errors).toBeUndefined();
+      expect((typed.body.data.publishedContents as CatalogPage).items.map((item) => item.id)).toEqual([
+        `${marker}-video`,
+      ]);
+
+      const authored = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query,
+          variables: { first: 12, search: `orbit ${marker}`, authorId, type: 'VIDEO' },
+        });
+      expect(authored.body.errors).toBeUndefined();
+      expect((authored.body.data.publishedContents as CatalogPage).items.map((item) => item.id)).toEqual([
+        `${marker}-video`,
+      ]);
+      const otherAuthor = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query,
+          variables: { first: 12, search: `orbit ${marker}`, authorId: randomUUID() },
+        });
+      expect(otherAuthor.body.errors).toBeUndefined();
+      expect((otherAuthor.body.data.publishedContents as CatalogPage).items).toEqual([]);
+
+      const categories = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: '{ categories { id name parent { id } children { id } } tags { id name } }' });
+      expect(categories.body.errors).toBeUndefined();
+      expect(categories.body.data.categories).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: category.id })]),
+      );
+      expect(categories.body.data.categories).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: child.id, parent: { id: category.id } })]),
+      );
+      expect(categories.body.data.tags).toEqual(expect.arrayContaining([expect.objectContaining({ id: tag.id })]));
+    } finally {
+      await prisma.content.updateMany({ where: { id: { in: contentIds } }, data: { categoryId: null } });
+      await prisma.tag.delete({ where: { id: tag.id } });
+      await prisma.category.delete({ where: { id: child.id } });
+      await prisma.category.delete({ where: { id: category.id } });
     }
   });
 });

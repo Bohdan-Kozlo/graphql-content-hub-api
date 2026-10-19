@@ -115,7 +115,12 @@ export default function PublicContentPage() {
               {content.author.username.charAt(0).toUpperCase()}
             </span>
             <div>
-              <p className="font-semibold">{content.author.username}</p>
+              <Link
+                to={`/?authorId=${encodeURIComponent(content.author.id)}`}
+                className="font-semibold text-hub-accent underline underline-offset-4"
+              >
+                {content.author.username}
+              </Link>
               <p className="text-sm text-hub-muted">Author</p>
             </div>
           </div>
@@ -166,7 +171,12 @@ export default function PublicContentPage() {
           {content.category && (
             <div className="mb-6">
               <p className="text-sm text-hub-muted">Category</p>
-              <p className="mt-1 font-semibold">{content.category.name}</p>
+              <Link
+                to={`/?categoryId=${encodeURIComponent(content.category.id)}`}
+                className="mt-1 inline-block font-semibold text-hub-accent underline underline-offset-4"
+              >
+                {content.category.name}
+              </Link>
             </div>
           )}
           {content.tags.length > 0 && (
@@ -174,12 +184,13 @@ export default function PublicContentPage() {
               <p className="text-sm text-hub-muted">Topics</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {content.tags.map((tag) => (
-                  <span
+                  <Link
                     key={tag.id}
+                    to={`/?tagId=${encodeURIComponent(tag.id)}`}
                     className="rounded-full border border-hub-line px-3 py-1 text-sm"
                   >
                     {tag.name}
-                  </span>
+                  </Link>
                 ))}
               </div>
             </div>

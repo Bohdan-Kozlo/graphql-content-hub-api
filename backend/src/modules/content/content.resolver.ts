@@ -7,6 +7,7 @@ import { AccessGuard } from '../../common/guards/access.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 import { UpdateContentInput } from './dto/update-content.input';
 import { ContentPageModel } from './dto/content-page.model';
+import { ContentType } from '../../../prisma/generated/client';
 
 @Resolver()
 export class ContentResolver {
@@ -21,8 +22,13 @@ export class ContentResolver {
   async publishedContents(
     @Args('first', { type: () => Int, defaultValue: 12 }) first: number,
     @Args('after', { nullable: true }) after?: string,
+    @Args('search', { nullable: true }) search?: string,
+    @Args('type', { type: () => ContentType, nullable: true }) type?: ContentType,
+    @Args('categoryId', { nullable: true }) categoryId?: string,
+    @Args('tagId', { nullable: true }) tagId?: string,
+    @Args('authorId', { nullable: true }) authorId?: string,
   ) {
-    return this.contentService.findPublishedPage(first, after);
+    return this.contentService.findPublishedPage(first, after, { search, type, categoryId, tagId, authorId });
   }
 
   @UseGuards(AccessGuard)

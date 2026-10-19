@@ -1,13 +1,31 @@
-query PublicCatalog($first: Int!, $after: String) {
-  publishedContents(first: $first, after: $after) {
+query PublicCatalog(
+  $first: Int!
+  $after: String
+  $search: String
+  $type: ContentType
+  $categoryId: String
+  $tagId: String
+  $authorId: String
+) {
+  publishedContents(
+    first: $first
+    after: $after
+    search: $search
+    type: $type
+    categoryId: $categoryId
+    tagId: $tagId
+    authorId: $authorId
+  ) {
     items {
       id
       title
       description
       type
+      status
       thumbnail
       publishedAt
       author {
+        id
         username
       }
       category {
@@ -16,5 +34,19 @@ query PublicCatalog($first: Int!, $after: String) {
     }
     endCursor
     hasMore
+  }
+}
+
+query DiscoveryFilters {
+  categories {
+    id
+    name
+    parent {
+      id
+    }
+  }
+  tags {
+    id
+    name
   }
 }
