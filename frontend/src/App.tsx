@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, Route, Routes } from 'react-router'
 
@@ -8,6 +8,25 @@ const PublicContentPage = lazy(
 const PublicCatalogPage = lazy(
   () => import('./features/catalog/PublicCatalogPage'),
 )
+
+type Theme = 'light' | 'dark'
+
+const THEME_STORAGE_KEY = 'content-hub-theme'
+
+function readSavedTheme(): Theme | null {
+  try {
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : null
+  } catch {
+    return null
+  }
+}
+
+function getSystemTheme(): Theme {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -21,9 +40,10 @@ function Shell({ children }: { children: ReactNode }) {
           >
             Content Hub<span className="text-hub-peach">.</span>
           </Link>
-          <span className="text-xs font-semibold tracking-[0.22em] text-hub-muted uppercase">
+          <span className="hidden text-xs font-semibold tracking-[0.22em] text-hub-muted uppercase md:inline">
             Stories worth sharing
           </span>
+          <ThemeToggle />
         </div>
       </header>
       <main>{children}</main>
@@ -31,6 +51,45 @@ function Shell({ children }: { children: ReactNode }) {
         Content Hub · A place for ideas, stories, and perspectives
       </footer>
     </div>
+  )
+}
+
+function ThemeToggle() {
+  const [savedTheme, setSavedTheme] = useState<Theme | null>(readSavedTheme)
+  const [systemTheme, setSystemTheme] = useState<Theme>(getSystemTheme)
+  const theme = savedTheme ?? systemTheme
+  const nextTheme = theme === 'dark' ? 'light' : 'dark'
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const updateSystemTheme = (event: MediaQueryListEvent) =>
+      setSystemTheme(event.matches ? 'dark' : 'light')
+    mediaQuery.addEventListener('change', updateSystemTheme)
+    return () => mediaQuery.removeEventListener('change', updateSystemTheme)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  function chooseTheme(next: Theme) {
+    setSavedTheme(next)
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, next)
+    } catch {
+      // Keep the selected theme active for this session when storage is unavailable.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => chooseTheme(nextTheme)}
+      aria-label={`Switch to ${nextTheme} theme`}
+      className="shrink-0 rounded-full border border-hub-line px-4 py-2 text-sm font-semibold text-hub-ink hover:bg-hub-surface"
+    >
+      {nextTheme === 'dark' ? 'Dark theme' : 'Light theme'}
+    </button>
   )
 }
 

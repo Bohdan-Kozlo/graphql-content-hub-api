@@ -8,6 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Content Hub</title>
+    <script>
+      try {
+        const theme = localStorage.getItem('content-hub-theme')
+        if (theme === 'light' || theme === 'dark') {
+          document.documentElement.dataset.theme = theme
+        }
+      } catch {
+        // The system preference remains available when browser storage is blocked.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
