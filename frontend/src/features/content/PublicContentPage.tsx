@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client/react'
 import { Link, useParams } from 'react-router'
 import { PublicContentDocument } from '../../gql/graphql'
 import { externalUrl } from '../../shared/external-url'
+import PublicMedia from './PublicMedia'
 
 function StatusMessage({ title, message }: { title: string; message: string }) {
   return (
@@ -66,7 +67,6 @@ export default function PublicContentPage() {
       }).format(new Date(content.publishedAt))
     : null
   const sourceUrl = externalUrl(content.source?.url)
-  const mediaUrl = externalUrl(content.mediaUrl)
   const paragraphs =
     content.body
       ?.split(/\n\s*\n|\n/)
@@ -125,15 +125,12 @@ export default function PublicContentPage() {
             </div>
           </div>
 
-          <div
-            className="relative mt-10 h-56 overflow-hidden rounded-2xl bg-hub-lilac sm:h-80"
-            role="img"
-            aria-label="Abstract story illustration"
-          >
-            <div className="absolute -top-20 right-[5%] size-64 rounded-full bg-hub-peach opacity-90 sm:size-96" />
-            <div className="absolute -bottom-36 left-[8%] h-72 w-[78%] rotate-[-17deg] rounded-[50%] bg-hub-accent opacity-70 sm:h-96" />
-            <div className="absolute right-[12%] bottom-[-25%] size-48 rounded-full border-[26px] border-hub-page opacity-70 sm:size-64" />
-          </div>
+          <PublicMedia
+            type={content.type}
+            title={content.title}
+            mediaUrl={content.mediaUrl}
+            thumbnail={content.thumbnail}
+          />
 
           <div className="mt-12 space-y-6 text-[1.05rem] leading-8 sm:text-lg">
             {paragraphs.length > 0 ? (
@@ -149,16 +146,6 @@ export default function PublicContentPage() {
             )}
           </div>
 
-          {mediaUrl && (
-            <a
-              href={mediaUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="mt-9 inline-block font-semibold text-hub-accent underline underline-offset-4"
-            >
-              Open original media
-            </a>
-          )}
         </div>
 
         <aside

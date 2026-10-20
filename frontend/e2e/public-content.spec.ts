@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const publicContent = {
   id: 'story-123',
@@ -53,6 +54,13 @@ test('opens a published story from its stable URL', async ({ page }) => {
     page.getByRole('heading', { name: 'Mapping the Night Sky' }),
   ).toBeVisible()
   await expect(page.getByText('Look up after sunset.')).toBeVisible()
+  await expect(
+    page.getByRole('img', { name: 'Abstract story illustration' }),
+  ).toBeVisible()
+  await expect(page.locator('iframe')).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: 'Open original media' }),
+  ).toHaveCount(0)
   await expect(page.getByText('Alex Writer')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Alex Writer' })).toHaveAttribute(
     'href',
@@ -86,5 +94,105 @@ test('does not display a draft on its public URL', async ({ page }) => {
   await page.goto('/content/draft-456')
   await expect(
     page.getByRole('heading', { name: 'Content unavailable' }),
+  ).toBeVisible()
+})
+
+async function openContentWithMedia(
+  page: Page,
+  content: typeof publicContent,
+) {
+  await page.route('**/graphql', (route) =>
+    route.fulfill({ json: { data: { content } } }),
+  )
+  await page.goto(`/content/${content.id}`)
+}
+
+test('plays YouTube video embeds and shows the content thumbnail', async ({
+  page,
+}) => {
+  await page.route('https://images.example.test/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#704b80"/></svg>',
+    }),
+  )
+  await openContentWithMedia(page, {
+    ...publicContent,
+    type: 'VIDEO',
+    mediaUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    thumbnail: 'https://images.example.test/night-sky.jpg',
+  })
+
+  const player = page.getByTitle('Video player: Mapping the Night Sky')
+  await expect(player).toHaveAttribute(
+    'src',
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+  )
+  await expect(player).toHaveAttribute('loading', 'lazy')
+  await expect(
+    page.getByRole('img', { name: 'Mapping the Night Sky thumbnail' }),
+  ).toHaveAttribute('src', 'https://images.example.test/night-sky.jpg')
+  await expect(
+    page.getByRole('link', { name: 'Open original media' }),
+  ).toHaveCount(0)
+})
+
+test('plays Spotify podcast embeds', async ({ page }) => {
+  await openContentWithMedia(page, {
+    ...publicContent,
+    type: 'PODCAST',
+    mediaUrl:
+      'https://open.spotify.com/episode/4uLU6hMCjMI75M1A2tKUQC?si=sample',
+  })
+
+  await expect(
+    page.getByTitle('Podcast player: Mapping the Night Sky'),
+  ).toHaveAttribute(
+    'src',
+    'https://open.spotify.com/embed/episode/4uLU6hMCjMI75M1A2tKUQC',
+  )
+  await expect(
+    page.getByRole('link', { name: 'Open original media' }),
+  ).toHaveCount(0)
+})
+
+test('links unsupported media to its original URL without embedding it', async ({
+  page,
+}) => {
+  await openContentWithMedia(page, {
+    ...publicContent,
+    type: 'VIDEO',
+    mediaUrl: 'https://media.example.test/documentary',
+  })
+
+  await expect(
+    page.getByRole('link', { name: 'Open original media' }),
+  ).toHaveAttribute('href', 'https://media.example.test/documentary')
+  await expect(page.locator('iframe')).toHaveCount(0)
+})
+
+test('keeps the page usable when the media URL is invalid and thumbnail fails', async ({
+  page,
+}) => {
+  await page.route('https://images.example.test/broken.jpg', (route) =>
+    route.abort(),
+  )
+  await openContentWithMedia(page, {
+    ...publicContent,
+    type: 'PODCAST',
+    mediaUrl: 'javascript:alert(1)',
+    thumbnail: 'https://images.example.test/broken.jpg',
+  })
+
+  await expect(
+    page.getByRole('heading', { name: 'Mapping the Night Sky' }),
+  ).toBeVisible()
+  await expect(page.locator('iframe')).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: 'Open original media' }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('img', { name: 'Abstract story illustration' }),
   ).toBeVisible()
 })
