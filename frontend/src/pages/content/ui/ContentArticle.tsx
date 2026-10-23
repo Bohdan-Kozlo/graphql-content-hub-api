@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import type { PublicContentQuery } from '@/shared/api/gql/graphql'
+import { Avatar } from '@/shared/ui/avatar'
 import PublicMedia from './PublicMedia'
 import { StoryDetails } from './StoryDetails'
 
@@ -54,15 +55,14 @@ export function ContentArticle({ content }: { content: Story }) {
           </p>
 
           <div className="mt-9 flex items-center gap-3 border-t border-hub-line pt-6">
-            <span
-              className="flex size-11 items-center justify-center rounded-full bg-hub-lilac font-hub-display text-lg font-semibold text-hub-ink"
-              aria-hidden="true"
-            >
-              {content.author.username.charAt(0).toUpperCase()}
-            </span>
+            <Avatar
+              username={content.author.username}
+              url={content.author.avatarUrl}
+              size="small"
+            />
             <div>
               <Link
-                to={`/?authorId=${encodeURIComponent(content.author.id)}`}
+                to={`/users/${encodeURIComponent(content.author.id)}`}
                 className="font-semibold text-hub-accent underline underline-offset-4"
               >
                 {content.author.username}

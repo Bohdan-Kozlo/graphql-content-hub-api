@@ -13,6 +13,7 @@ import { UserService } from '../user/user.service';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { RefreshGuard } from '../../common/guards/refresh.guard';
 import { PasswordRecoveryService } from './password-recovery.service';
+import { RequestPasswordResetArgs, ResetPasswordArgs } from './dto/reset-password.args';
 
 @Resolver()
 export class AuthResolver {
@@ -23,20 +24,19 @@ export class AuthResolver {
   ) {}
 
   @Mutation(() => Boolean)
-  async requestPasswordReset(@Args('email') email: string, @Context() context: { req: Request }): Promise<boolean> {
+  async requestPasswordReset(
+    @Args() args: RequestPasswordResetArgs,
+    @Context() context: { req: Request },
+  ): Promise<boolean> {
     this.checkOrigin(context.req);
-    await this.passwordRecoveryService.request(email, context.req.ip ?? 'unknown');
+    await this.passwordRecoveryService.request(args.email, context.req.ip ?? 'unknown');
     return true;
   }
 
   @Mutation(() => Boolean)
-  async resetPassword(
-    @Args('token') token: string,
-    @Args('password') password: string,
-    @Context() context: { req: Request },
-  ): Promise<boolean> {
+  async resetPassword(@Args() args: ResetPasswordArgs, @Context() context: { req: Request }): Promise<boolean> {
     this.checkOrigin(context.req);
-    await this.passwordRecoveryService.reset(token, password);
+    await this.passwordRecoveryService.reset(args.token, args.password);
     return true;
   }
 

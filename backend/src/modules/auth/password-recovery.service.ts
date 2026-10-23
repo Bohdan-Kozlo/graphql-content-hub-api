@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
@@ -57,7 +57,6 @@ export class PasswordRecoveryService {
   }
 
   async reset(token: string, password: string): Promise<void> {
-    if (password.length < 8) throw new BadRequestException('Use at least eight characters');
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const user = await this.prisma.user.findUnique({ where: { passwordResetTokenHash: tokenHash } });
     if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt <= new Date()) {

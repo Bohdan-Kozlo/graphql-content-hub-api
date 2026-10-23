@@ -25,6 +25,11 @@ const AccountPage = lazy(() =>
 const AccountHomePage = lazy(() =>
   import('@/pages/account').then(({ AccountHomePage }) => ({ default: AccountHomePage })),
 )
+const PublicProfilePage = lazy(() =>
+  import('@/pages/profile').then(({ PublicProfilePage }) => ({
+    default: PublicProfilePage,
+  })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/not-found').then(({ NotFoundPage }) => ({ default: NotFoundPage })),
 )
@@ -87,6 +92,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PublicCatalogPage />} />
           <Route path="/content/:id" element={<PublicContentPage />} />
+          <Route path="/users/:id" element={<PublicProfilePage />} />
           <Route
             path="/login"
             element={<AccountAccessRoute ready={ready} mode="login" />}

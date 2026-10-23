@@ -1,12 +1,14 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { TagService } from './tag.service';
 import { TagModel } from './dto/tag.model';
-import { CreateTagInput, UpdateTagInput } from './dto/create-tag.input';
+import { CreateTagInput } from './dto/create-tag.input';
+import { UpdateTagArgs } from './dto/update-tag.args';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { Roles } from '../../common/decorators/reles.decorator';
 import { Role } from '../../../prisma/generated/client';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { IdArgs, LimitArgs, NameArgs } from '../../common/dto/graphql-args';
 
 @Resolver(() => TagModel)
 export class TagResolver {
@@ -18,18 +20,18 @@ export class TagResolver {
   }
 
   @Query(() => TagModel)
-  async tag(@Args('id') id: string) {
-    return this.tagService.findOne(id);
+  async tag(@Args() args: IdArgs) {
+    return this.tagService.findOne(args.id);
   }
 
   @Query(() => TagModel, { nullable: true })
-  async tagByName(@Args('name') name: string) {
-    return this.tagService.findByName(name);
+  async tagByName(@Args() args: NameArgs) {
+    return this.tagService.findByName(args.name);
   }
 
   @Query(() => [TagModel])
-  async popularTags(@Args('limit', { defaultValue: 10 }) limit: number) {
-    return this.tagService.getPopularTags(limit);
+  async popularTags(@Args() args: LimitArgs) {
+    return this.tagService.getPopularTags(args.limit);
   }
 
   @Roles(Role.EDITOR, Role.ADMIN)
@@ -42,14 +44,14 @@ export class TagResolver {
   @Roles(Role.EDITOR, Role.ADMIN)
   @UseGuards(AccessGuard, RolesGuard)
   @Mutation(() => TagModel)
-  async updateTag(@Args('id') id: string, @Args('data') data: UpdateTagInput) {
-    return this.tagService.update(id, data);
+  async updateTag(@Args() args: UpdateTagArgs) {
+    return this.tagService.update(args.id, args.data);
   }
 
   @Roles(Role.ADMIN)
   @UseGuards(AccessGuard, RolesGuard)
   @Mutation(() => Boolean)
-  async deleteTag(@Args('id') id: string) {
-    return this.tagService.remove(id);
+  async deleteTag(@Args() args: IdArgs) {
+    return this.tagService.remove(args.id);
   }
 }

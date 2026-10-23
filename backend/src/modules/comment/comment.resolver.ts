@@ -1,10 +1,12 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { CommentService } from './comment.service';
 import { CommentModel } from './dto/comment.model';
-import { CreateCommentInput, UpdateCommentInput } from './dto/create-comment.input';
+import { CreateCommentInput } from './dto/create-comment.input';
+import { UpdateCommentArgs } from './dto/update-comment.args';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
+import { ContentIdArgs, IdArgs } from '../../common/dto/graphql-args';
 
 @Resolver(() => CommentModel)
 export class CommentResolver {
@@ -17,28 +19,24 @@ export class CommentResolver {
   }
 
   @Query(() => [CommentModel])
-  async commentsByContent(@Args('contentId') contentId: string) {
-    return this.commentService.findByContentId(contentId);
+  async commentsByContent(@Args() args: ContentIdArgs) {
+    return this.commentService.findByContentId(args.contentId);
   }
 
   @Query(() => CommentModel)
-  async comment(@Args('id') id: string) {
-    return this.commentService.findOne(id);
+  async comment(@Args() args: IdArgs) {
+    return this.commentService.findOne(args.id);
   }
 
   @UseGuards(AccessGuard)
   @Mutation(() => CommentModel)
-  async updateComment(
-    @Args('id') id: string,
-    @Args('data') data: UpdateCommentInput,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.commentService.update(id, data, userId);
+  async updateComment(@Args() args: UpdateCommentArgs, @CurrentUser('id') userId: string) {
+    return this.commentService.update(args.id, args.data, userId);
   }
 
   @UseGuards(AccessGuard)
   @Mutation(() => Boolean)
-  async deleteComment(@Args('id') id: string, @CurrentUser('id') userId: string) {
-    return this.commentService.remove(id, userId);
+  async deleteComment(@Args() args: IdArgs, @CurrentUser('id') userId: string) {
+    return this.commentService.remove(args.id, userId);
   }
 }

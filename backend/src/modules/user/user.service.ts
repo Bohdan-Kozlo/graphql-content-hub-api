@@ -3,6 +3,8 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from '../../../prisma/generated/client';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UpdateOwnProfileInput } from './dto/update-own-profile.input';
+import { publicAuthorSelect } from '../content/public-content.include';
 
 @Injectable()
 export class UserService {
@@ -21,6 +23,18 @@ export class UserService {
         username: true,
         createdAt: true,
       },
+    });
+  }
+
+  async findPublicProfile(id: string) {
+    return this.prismaService.user.findUnique({ where: { id }, select: publicAuthorSelect });
+  }
+
+  async updateOwnProfile(id: string, input: UpdateOwnProfileInput) {
+    return this.prismaService.user.update({
+      where: { id },
+      data: { username: input.username, bio: input.bio, avatarUrl: input.avatarUrl },
+      select: publicAuthorSelect,
     });
   }
 

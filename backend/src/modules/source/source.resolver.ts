@@ -1,12 +1,14 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { SourceService } from './source.service';
 import { SourceModel } from './dto/source.model';
-import { CreateSourceInput, UpdateSourceInput } from './dto/create-source.input';
+import { CreateSourceInput } from './dto/create-source.input';
+import { UpdateSourceArgs } from './dto/update-source.args';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { Roles } from '../../common/decorators/reles.decorator';
 import { Role } from '../../../prisma/generated/client';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { IdArgs } from '../../common/dto/graphql-args';
 
 @UseGuards(AccessGuard)
 @Resolver()
@@ -19,8 +21,8 @@ export class SourceResolver {
   }
 
   @Query(() => SourceModel)
-  source(@Args('id') id: string) {
-    return this.sourceService.findOne(id);
+  source(@Args() args: IdArgs) {
+    return this.sourceService.findOne(args.id);
   }
 
   @Query(() => SourceModel)
@@ -29,14 +31,14 @@ export class SourceResolver {
   }
 
   @Query(() => SourceModel)
-  updateSource(@Args('id') id: string, @Args('data') data: UpdateSourceInput) {
-    return this.sourceService.update(id, data);
+  updateSource(@Args() args: UpdateSourceArgs) {
+    return this.sourceService.update(args.id, args.data);
   }
 
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
   @Query(() => Boolean)
-  deleteSource(@Args('id') id: string) {
-    return this.sourceService.remove(id);
+  deleteSource(@Args() args: IdArgs) {
+    return this.sourceService.remove(args.id);
   }
 }

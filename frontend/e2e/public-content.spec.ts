@@ -33,6 +33,9 @@ test('opens a published story from its stable URL', async ({ page }) => {
       await route.fulfill({ json: { errors: [{ message: 'Unauthorized' }] } })
     } else if (request.operationName === 'DiscoveryFilters') {
       await route.fulfill({ json: { data: { categories: [], tags: [] } } })
+    } else if (request.operationName === 'PublicProfile') {
+      expect(request.variables?.id).toBe('author-1')
+      await route.fulfill({ json: { data: { publicProfile: publicContent.author } } })
     } else if (request.operationName === 'PublicCatalog') {
       expect(request.variables?.authorId).toBe('author-1')
       await route.fulfill({
@@ -63,7 +66,7 @@ test('opens a published story from its stable URL', async ({ page }) => {
   await expect(page.getByText('Alex Writer')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Alex Writer' })).toHaveAttribute(
     'href',
-    '/?authorId=author-1',
+    '/users/author-1',
   )
   await expect(page.getByText('Science')).toBeVisible()
   await expect(page.getByText('Astronomy')).toBeVisible()
@@ -81,8 +84,11 @@ test('opens a published story from its stable URL', async ({ page }) => {
   )
   await expect(page.getByText(/example\.test/)).toHaveCount(0)
   await page.getByRole('link', { name: 'Alex Writer' }).click()
-  await expect(page).toHaveURL(/\?authorId=author-1$/)
-  await expect(page.getByRole('heading', { name: 'Mapping the Night Sky' })).toBeVisible()
+  await expect(page).toHaveURL(/\/users\/author-1$/)
+  await expect(page.getByRole('heading', { name: 'Alex Writer' })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Read Mapping the Night Sky' }),
+  ).toBeVisible()
 })
 
 test('does not display a draft on its public URL', async ({ page }) => {

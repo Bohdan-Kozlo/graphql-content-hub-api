@@ -1,0 +1,8 @@
+query PublicProfile($id: String!) {
+  publicProfile(id: $id) {
+    id
+    username
+    bio
+    avatarUrl
+  }
+}

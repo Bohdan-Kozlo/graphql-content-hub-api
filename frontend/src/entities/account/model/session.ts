@@ -23,6 +23,10 @@ export function getAccount() {
   return currentAccount
 }
 
+export function updateSessionUsername(username: string) {
+  if (currentAccount) publish(accessToken, { ...currentAccount, username })
+}
+
 export function subscribeSession(listener: () => void) {
   listeners.add(listener)
   return () => listeners.delete(listener)

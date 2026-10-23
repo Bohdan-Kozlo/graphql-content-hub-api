@@ -5,7 +5,8 @@ import { ToggleReactionInput } from './dto/create-reaction.input';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
-import { ReactionType } from '../../../prisma/generated/client';
+import { ContentIdArgs } from '../../common/dto/graphql-args';
+import { HasUserReactedArgs } from './dto/has-user-reacted.args';
 
 @Resolver(() => ReactionModel)
 export class ReactionResolver {
@@ -19,8 +20,8 @@ export class ReactionResolver {
   }
 
   @Query(() => [ReactionModel])
-  async reactionsByContent(@Args('contentId') contentId: string) {
-    return this.reactionService.findByContentId(contentId);
+  async reactionsByContent(@Args() args: ContentIdArgs) {
+    return this.reactionService.findByContentId(args.contentId);
   }
 
   @UseGuards(AccessGuard)
@@ -30,18 +31,14 @@ export class ReactionResolver {
   }
 
   @Query(() => String)
-  async reactionCounts(@Args('contentId') contentId: string) {
-    const counts = await this.reactionService.getReactionCounts(contentId);
+  async reactionCounts(@Args() args: ContentIdArgs) {
+    const counts = await this.reactionService.getReactionCounts(args.contentId);
     return JSON.stringify(counts);
   }
 
   @UseGuards(AccessGuard)
   @Query(() => Boolean)
-  async hasUserReacted(
-    @Args('contentId') contentId: string,
-    @Args('type') type: string,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.reactionService.hasUserReacted(contentId, userId, type as ReactionType);
+  async hasUserReacted(@Args() args: HasUserReactedArgs, @CurrentUser('id') userId: string) {
+    return this.reactionService.hasUserReacted(args.contentId, userId, args.type);
   }
 }

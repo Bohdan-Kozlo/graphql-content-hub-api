@@ -43,6 +43,19 @@ test('visitor signs up, restores the session, signs out, and signs in', async ({
             : { login: { accessToken: 'access-token', account } },
         },
       })
+    } else if (query.includes('PublicProfile')) {
+      await route.fulfill({
+        json: {
+          data: {
+            publicProfile: {
+              id: account.id,
+              username: account.username,
+              bio: null,
+              avatarUrl: null,
+            },
+          },
+        },
+      })
     } else if (query.includes('logout')) {
       await route.fulfill({
         headers: {
@@ -107,6 +120,19 @@ test('sign out renews an expired access token before revoking the session', asyn
     } else if (query.includes('login(')) {
       await route.fulfill({
         json: { data: { login: { accessToken: 'expired', account } } },
+      })
+    } else if (query.includes('PublicProfile')) {
+      await route.fulfill({
+        json: {
+          data: {
+            publicProfile: {
+              id: account.id,
+              username: account.username,
+              bio: null,
+              avatarUrl: null,
+            },
+          },
+        },
       })
     } else if (query.includes('logout')) {
       logoutCalls++

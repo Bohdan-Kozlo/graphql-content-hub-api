@@ -7,4 +7,5 @@ export {
   signOut,
   signUp,
   subscribeSession,
+  updateSessionUsername,
 } from './model/session'

@@ -113,7 +113,7 @@ describe('User Module (e2e)', () => {
             createUser(data: {
               email: "findme@example.com",
               username: "findme",
-              password: "pass123"
+              password: "password123"
             }) {
               id
               email
@@ -147,7 +147,7 @@ describe('User Module (e2e)', () => {
             createUser(data: {
               email: "update@example.com",
               username: "updateme",
-              password: "pass123"
+              password: "password123"
             }) {
               id
             }
@@ -175,6 +175,21 @@ describe('User Module (e2e)', () => {
     expect(response.body.data.updateUser.username).toBe('updated');
   });
 
+  it('validates a mutation with both id and data arguments', async () => {
+    const category = await prisma.category.create({ data: { name: `Before ${Date.now()}` } });
+    try {
+      const response = await authorizedRequest().send({
+        query: `mutation { updateCategory(id: "${category.id}", data: { name: "Updated category" }) { id name } }`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.errors).toBeUndefined();
+      expect(response.body.data.updateCategory.name).toBe('Updated category');
+    } finally {
+      await prisma.category.delete({ where: { id: category.id } });
+    }
+  });
+
   it('should delete a user', async () => {
     const createResponse = await authorizedRequest().send({
       query: `
@@ -182,7 +197,7 @@ describe('User Module (e2e)', () => {
             createUser(data: {
               email: "delete@example.com",
               username: "deleteme",
-              password: "pass123"
+              password: "password123"
             }) {
               id
             }

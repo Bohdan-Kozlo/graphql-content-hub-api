@@ -41,7 +41,6 @@ export class AuthService {
   }
 
   async signup(data: SignupInput) {
-    if (data.password.length < 8) throw new BadRequestException('Use at least eight characters');
     const email = data.email.trim().toLowerCase();
     const ifUserExists = await this.userService.findByEmail(email);
     if (ifUserExists) {

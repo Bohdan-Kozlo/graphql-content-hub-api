@@ -132,6 +132,7 @@ type Query {
   users: [UserModel!]!
   user(id: String!): UserModel!
   profile: UserModel!
+  publicProfile(id: String!): PublicAuthorModel
   commentsByContent(contentId: String!): [CommentModel!]!
   comment(id: String!): CommentModel!
   content(id: String!): ContentModel
@@ -183,12 +184,12 @@ type Mutation {
   createUser(data: CreateUserInput!): UserModel!
   updateUser(data: UpdateUserInput!): UserModel!
   deleteUser(id: String!): Boolean!
-  updateProfile(data: UpdateUserInput!): UserModel!
+  updateProfile(data: UpdateOwnProfileInput!): PublicAuthorModel!
   createComment(data: CreateCommentInput!): CommentModel!
   updateComment(id: String!, data: UpdateCommentInput!): CommentModel!
   deleteComment(id: String!): Boolean!
   createContent(data: CreateContentInput!): ContentModel!
-  updateContent(data: UpdateContentInput!, id: String!): ContentModel!
+  updateContent(id: String!, data: UpdateContentInput!): ContentModel!
   removeContent(id: String!): Boolean!
   createCategory(data: CreateCategoryInput!): CategoryModel!
   updateCategory(id: String!, data: UpdateCategoryInput!): CategoryModel!
@@ -225,6 +226,12 @@ input UpdateUserInput {
   bio: String
   avatarUrl: String
   id: String!
+}
+
+input UpdateOwnProfileInput {
+  username: String
+  bio: String
+  avatarUrl: String
 }
 
 input CreateCommentInput {

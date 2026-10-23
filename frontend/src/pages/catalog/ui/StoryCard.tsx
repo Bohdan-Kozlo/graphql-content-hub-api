@@ -100,10 +100,13 @@ export function StoryCard({
               {item.description}
             </p>
           )}
-          <p className="mt-3 text-sm font-semibold text-hub-ink">
-            {item.author.username}
-          </p>
         </div>
+      </Link>
+      <Link
+        to={`/users/${encodeURIComponent(item.author.id)}`}
+        className="mt-3 inline-block text-sm font-semibold text-hub-accent underline underline-offset-4"
+      >
+        {item.author.username}
       </Link>
     </article>
   )

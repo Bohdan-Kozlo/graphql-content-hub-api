@@ -58,10 +58,6 @@ export class ContentService {
   }
 
   async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}) {
-    if (!Number.isInteger(first) || first < 1 || first > 30) {
-      throw new BadRequestException('Page size must be between 1 and 30');
-    }
-
     const term = filters.search?.trim();
     const where: Prisma.ContentWhereInput = {
       status: ContentStatus.PUBLISHED,

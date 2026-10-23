@@ -8,6 +8,7 @@ import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 import { Roles } from '../../common/decorators/reles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Role } from '../../../prisma/generated/client';
+import { ContentIdArgs, LimitArgs } from '../../common/dto/graphql-args';
 
 @Resolver(() => ViewModel)
 export class ViewResolver {
@@ -21,8 +22,8 @@ export class ViewResolver {
   @Roles(Role.ADMIN)
   @UseGuards(AccessGuard, RolesGuard)
   @Query(() => [ViewModel])
-  async viewsByContent(@Args('contentId') contentId: string) {
-    return this.viewService.findByContentId(contentId);
+  async viewsByContent(@Args() args: ContentIdArgs) {
+    return this.viewService.findByContentId(args.contentId);
   }
 
   @UseGuards(AccessGuard)
@@ -32,26 +33,26 @@ export class ViewResolver {
   }
 
   @Query(() => Number)
-  async viewCount(@Args('contentId') contentId: string) {
-    return this.viewService.getViewCount(contentId);
+  async viewCount(@Args() args: ContentIdArgs) {
+    return this.viewService.getViewCount(args.contentId);
   }
 
   @Query(() => Number)
-  async uniqueViewCount(@Args('contentId') contentId: string) {
-    return this.viewService.getUniqueViewCount(contentId);
+  async uniqueViewCount(@Args() args: ContentIdArgs) {
+    return this.viewService.getUniqueViewCount(args.contentId);
   }
 
   @Query(() => String)
-  async viewStats(@Args('contentId') contentId: string) {
-    const stats = await this.viewService.getViewStats(contentId);
+  async viewStats(@Args() args: ContentIdArgs) {
+    const stats = await this.viewService.getViewStats(args.contentId);
     return JSON.stringify(stats);
   }
 
   @Roles(Role.ADMIN)
   @UseGuards(AccessGuard, RolesGuard)
   @Query(() => String)
-  async mostViewedContent(@Args('limit', { defaultValue: 10 }) limit: number) {
-    const content = await this.viewService.getMostViewedContent(limit);
+  async mostViewedContent(@Args() args: LimitArgs) {
+    const content = await this.viewService.getMostViewedContent(args.limit);
     return JSON.stringify(content);
   }
 }

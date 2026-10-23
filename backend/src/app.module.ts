@@ -14,6 +14,8 @@ import { SourceModule } from './modules/source/source.module';
 import { ReactionModule } from './modules/reaction/reaction.module';
 import { ViewModule } from './modules/view/view.module';
 import type { Request, Response } from 'express';
+import { ValidationPipe } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -41,6 +43,11 @@ import type { Request, Response } from 'express';
     ViewModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    },
+  ],
 })
 export class AppModule {}
