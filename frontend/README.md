@@ -14,11 +14,18 @@ Content newest first in pages. Each card links to `/content/:id`; unpublished an
 missing IDs share an unavailable state. The API's `publishedContents(first, after)`
 query returns up to 30 items per page, an `endCursor`, and `hasMore`.
 
+Account recovery starts from the sign-in page at `/forgot-password`. The email link opens `/reset-password?token=...`; successful reset signs out existing sessions and returns the user to sign-in.
+
 ```sh
 npm run codegen     # typed operations from ../backend/schema.gql
 npm run build       # codegen, TypeScript, production bundle
-npm run lint
+npm run format      # format handwritten frontend files
+npm run format:check
+npm run lint        # oxlint and FSD architecture rules
 npm run test:e2e    # Playwright desktop and phone tests
 ```
 
 Install the Playwright Chromium browser once with `npx playwright install chromium`.
+See [`docs/frontend/architecture.md`](../docs/frontend/architecture.md) for the
+FSD structure and [`docs/agents/frontend.md`](../docs/agents/frontend.md) for
+implementation and review rules.

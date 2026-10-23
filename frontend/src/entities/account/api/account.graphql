@@ -1,0 +1,39 @@
+mutation RefreshSession {
+  refreshTokens {
+    accessToken
+    account {
+      id
+      email
+      username
+      roles
+    }
+  }
+}
+
+mutation Login($data: LoginInput!) {
+  login(data: $data) {
+    accessToken
+    account {
+      id
+      email
+      username
+      roles
+    }
+  }
+}
+
+mutation Signup($data: SignupInput!) {
+  signup(data: $data) {
+    accessToken
+    account {
+      id
+      email
+      username
+      roles
+    }
+  }
+}
+
+mutation Logout {
+  logout
+}

@@ -6,6 +6,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from '../user/user.module';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { PasswordRecoveryService } from './password-recovery.service';
+import { PasswordRecoveryMailer } from './password-recovery.mailer';
 
 @Module({
   imports: [
@@ -20,6 +22,13 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     }),
     UserModule,
   ],
-  providers: [AuthResolver, AuthService, AccessTokenStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthResolver,
+    AuthService,
+    AccessTokenStrategy,
+    RefreshTokenStrategy,
+    PasswordRecoveryService,
+    PasswordRecoveryMailer,
+  ],
 })
 export class AuthModule {}

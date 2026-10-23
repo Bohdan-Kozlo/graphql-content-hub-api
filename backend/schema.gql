@@ -2,9 +2,22 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Account {
+  id: String!
+  email: String!
+  username: String!
+  roles: [Role!]!
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
 type AuthResponse {
   accessToken: String!
-  refreshToken: String!
+  account: Account!
 }
 
 type CategoryModel {
@@ -92,12 +105,6 @@ type UserModel {
   comments: [CommentModel!]!
 }
 
-enum Role {
-  USER
-  EDITOR
-  ADMIN
-}
-
 type ContentPageModel {
   items: [ContentModel!]!
   endCursor: String
@@ -121,6 +128,7 @@ type ViewModel {
 }
 
 type Query {
+  me: Account!
   users: [UserModel!]!
   user(id: String!): UserModel!
   profile: UserModel!
@@ -166,6 +174,8 @@ input UpdateSourceInput {
 }
 
 type Mutation {
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(token: String!, password: String!): Boolean!
   login(data: LoginInput!): AuthResponse!
   signup(data: SignupInput!): AuthResponse!
   logout: Boolean!

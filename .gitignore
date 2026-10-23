@@ -5,12 +5,17 @@ build/
 
 **/prisma/generated/
 
-# Local planning and agent documentation
+# Local planning; selected agent rules are versioned below
 /.scratch/
 /.skratch/
 /.ua/
-/docs/
-/AGENTS.md
+/docs/*
+!/docs/agents/
+!/docs/frontend/
+/docs/agents/*
+!/docs/agents/frontend.md
+/docs/frontend/*
+!/docs/frontend/architecture.md
 /GLOSSARY.md
 /ARCHITECTURE.md
 

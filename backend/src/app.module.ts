@@ -13,6 +13,7 @@ import { TagModule } from './modules/tag/tag.module';
 import { SourceModule } from './modules/source/source.module';
 import { ReactionModule } from './modules/reaction/reaction.module';
 import { ViewModule } from './modules/view/view.module';
+import type { Request, Response } from 'express';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ViewModule } from './modules/view/view.module';
       driver: ApolloDriver,
       graphiql: true,
       introspection: true,
+      context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
     }),
     ConfigModule.forRoot({
       isGlobal: true,

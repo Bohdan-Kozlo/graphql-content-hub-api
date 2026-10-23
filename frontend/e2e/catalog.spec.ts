@@ -91,35 +91,21 @@ test('loads all four types in pages and opens a story', async ({ page }) => {
 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Fresh Ideas' })).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'City in Motion' }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'The Listening Room' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'City in Motion' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'The Listening Room' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Load more' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'The Listening Room' }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'Today in Science' }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'City in Motion' }),
-  ).toHaveCount(1)
+  await expect(page.getByRole('heading', { name: 'The Listening Room' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today in Science' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'City in Motion' })).toHaveCount(1)
   await expect(page.getByRole('button', { name: 'Load more' })).toHaveCount(0)
   expect(cursors).toEqual([null, 'video-1'])
 
   await page.getByRole('link', { name: /The Listening Room/ }).click()
   await expect(page).toHaveURL(/\/content\/podcast-1$/)
-  await expect(
-    page.getByText('Listen to a thoughtful conversation.'),
-  ).toBeVisible()
+  await expect(page.getByText('Listen to a thoughtful conversation.')).toBeVisible()
 })
 
-test('shows an empty catalog when there are no published items', async ({
-  page,
-}) => {
+test('shows an empty catalog when there are no published items', async ({ page }) => {
   await page.route('**/graphql', (route) => {
     const body = route.request().postDataJSON() as { operationName?: string }
     return route.fulfill({
@@ -187,9 +173,7 @@ test('keeps the current page and offers a retry when Load more fails', async ({
   await expect(page.getByText('Could not load more stories.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Fresh Ideas' })).toBeVisible()
   await page.getByRole('button', { name: 'Try again' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Today in Science' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today in Science' })).toBeVisible()
   expect(attempts).toBe(2)
 })
 
@@ -253,15 +237,9 @@ test('combines search, type, category and tag and clears the filtered view', asy
   await page.getByLabel('Content type').selectOption('VIDEO')
   await page.getByLabel('Category').selectOption('category-2')
   await page.getByLabel('Tag').selectOption('tag-1')
-  await expect(
-    page.getByRole('heading', { name: 'City in Motion' }),
-  ).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Fresh Ideas' })).toHaveCount(
-    0,
-  )
-  await expect(page.getByRole('heading', { name: 'Secret draft' })).toHaveCount(
-    0,
-  )
+  await expect(page.getByRole('heading', { name: 'City in Motion' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Fresh Ideas' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Secret draft' })).toHaveCount(0)
   await expect(page.getByText('Category: Music')).toBeVisible()
   expect(requests).toContainEqual(
     expect.objectContaining({

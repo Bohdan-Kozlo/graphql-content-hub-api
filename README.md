@@ -7,4 +7,6 @@ This repository contains two independent applications:
 
 Install dependencies and run commands from the application directory you are working in. The API uses port 3000 by default; the Vite development server uses port 5173. The frontend has a public Content detail route and proxies GraphQL requests to the API.
 
-Planning documents and tasks remain at the repository root in `docs/`, `.scratch/`, `.ua/`, `AGENTS.md`, `GLOSSARY.md`, and `ARCHITECTURE.md`. These local files are excluded from Git by `.gitignore`.
+Frontend architecture is documented in [`docs/frontend/architecture.md`](docs/frontend/architecture.md),
+with agent review rules in [`docs/agents/frontend.md`](docs/agents/frontend.md).
+Local planning artifacts in `.scratch/`, `.ua/`, and `GLOSSARY.md` remain excluded from Git.

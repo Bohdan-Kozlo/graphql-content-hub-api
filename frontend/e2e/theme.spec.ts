@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('follows the system theme until a manual choice is made', async ({
-  page,
-}) => {
+test('follows the system theme until a manual choice is made', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('/')
 

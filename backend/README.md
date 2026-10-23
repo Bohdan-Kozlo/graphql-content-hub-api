@@ -56,13 +56,15 @@ Run these commands from `backend/`. Use Node.js 24.15 or later and Docker. Copy 
 
 ```sh
 npm ci
-docker compose up -d postgres redis
+docker compose up -d postgres redis mailpit
 npm run db:generate
 npm run db:migrate
 npm run start:dev
 ```
 
 The GraphQL endpoint and GraphiQL are available at `http://localhost:3000/graphql`. `npm run build` creates the production build, and `npm run start:prod` starts it.
+
+Password recovery sends mail through SMTP. Locally, Mailpit accepts messages at `localhost:1025` and shows them at `http://localhost:8025`. Set `APP_PUBLIC_URL` to the public frontend origin so reset links point to the correct site. For deployment, set `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`, `MAIL_USER`, `MAIL_PASSWORD`, and `MAIL_SECURE` for the SMTP provider. Do not use the local Mailpit address or example sender in production. Recovery links expire after 30 minutes and are single use. Request limits are three per email and 30 per client IP per hour, stored in Redis. The API returns the same success response for known and unknown addresses; failed delivery is logged without exposing account details, and the user can request another link later.
 
 Prisma generates its client and types into `prisma/generated/`. Run `npm run db:generate` after changing `prisma/schema.prisma`; the generated directory is ignored by Git.
 

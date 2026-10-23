@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { config as loadEnv } from 'dotenv';
+import { randomUUID } from 'node:crypto';
 
 loadEnv();
 if (!process.env.DATABASE_URL) {
@@ -14,6 +15,8 @@ if (!databaseUrl.pathname.endsWith('_test')) {
   throw new Error('E2E tests require a database name ending in _test');
 }
 process.env.DATABASE_URL = databaseUrl.toString();
+process.env.REDIS_DB = '15';
+process.env.PASSWORD_RESET_RATE_PREFIX = `password-reset:test:${randomUUID()}`;
 
 export default defineConfig({
   test: {

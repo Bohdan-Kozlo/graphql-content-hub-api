@@ -25,10 +25,13 @@ const publicContent = {
 test('opens a published story from its stable URL', async ({ page }) => {
   await page.route('**/graphql', async (route) => {
     const request = route.request().postDataJSON() as {
+      query?: string
       operationName?: string
       variables?: { id?: string; authorId?: string }
     }
-    if (request.operationName === 'DiscoveryFilters') {
+    if (request.query?.includes('refreshTokens')) {
+      await route.fulfill({ json: { errors: [{ message: 'Unauthorized' }] } })
+    } else if (request.operationName === 'DiscoveryFilters') {
       await route.fulfill({ json: { data: { categories: [], tags: [] } } })
     } else if (request.operationName === 'PublicCatalog') {
       expect(request.variables?.authorId).toBe('author-1')
@@ -50,17 +53,13 @@ test('opens a published story from its stable URL', async ({ page }) => {
   })
 
   await page.goto('/content/story-123')
-  await expect(
-    page.getByRole('heading', { name: 'Mapping the Night Sky' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mapping the Night Sky' })).toBeVisible()
   await expect(page.getByText('Look up after sunset.')).toBeVisible()
   await expect(
     page.getByRole('img', { name: 'Abstract story illustration' }),
   ).toBeVisible()
   await expect(page.locator('iframe')).toHaveCount(0)
-  await expect(
-    page.getByRole('link', { name: 'Open original media' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Open original media' })).toHaveCount(0)
   await expect(page.getByText('Alex Writer')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Alex Writer' })).toHaveAttribute(
     'href',
@@ -76,15 +75,14 @@ test('opens a published story from its stable URL', async ({ page }) => {
     'href',
     '/?tagId=tag-1',
   )
-  await expect(
-    page.getByRole('link', { name: 'Open Journal' }),
-  ).toHaveAttribute('href', 'https://example.org/')
+  await expect(page.getByRole('link', { name: 'Open Journal' })).toHaveAttribute(
+    'href',
+    'https://example.org/',
+  )
   await expect(page.getByText(/example\.test/)).toHaveCount(0)
   await page.getByRole('link', { name: 'Alex Writer' }).click()
   await expect(page).toHaveURL(/\?authorId=author-1$/)
-  await expect(
-    page.getByRole('heading', { name: 'Mapping the Night Sky' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mapping the Night Sky' })).toBeVisible()
 })
 
 test('does not display a draft on its public URL', async ({ page }) => {
@@ -92,24 +90,17 @@ test('does not display a draft on its public URL', async ({ page }) => {
     route.fulfill({ json: { data: { content: null } } }),
   )
   await page.goto('/content/draft-456')
-  await expect(
-    page.getByRole('heading', { name: 'Content unavailable' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Content unavailable' })).toBeVisible()
 })
 
-async function openContentWithMedia(
-  page: Page,
-  content: typeof publicContent,
-) {
+async function openContentWithMedia(page: Page, content: typeof publicContent) {
   await page.route('**/graphql', (route) =>
     route.fulfill({ json: { data: { content } } }),
   )
   await page.goto(`/content/${content.id}`)
 }
 
-test('plays YouTube video embeds and shows the content thumbnail', async ({
-  page,
-}) => {
+test('plays YouTube video embeds and shows the content thumbnail', async ({ page }) => {
   await page.route('https://images.example.test/**', (route) =>
     route.fulfill({
       status: 200,
@@ -133,28 +124,21 @@ test('plays YouTube video embeds and shows the content thumbnail', async ({
   await expect(
     page.getByRole('img', { name: 'Mapping the Night Sky thumbnail' }),
   ).toHaveAttribute('src', 'https://images.example.test/night-sky.jpg')
-  await expect(
-    page.getByRole('link', { name: 'Open original media' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Open original media' })).toHaveCount(0)
 })
 
 test('plays Spotify podcast embeds', async ({ page }) => {
   await openContentWithMedia(page, {
     ...publicContent,
     type: 'PODCAST',
-    mediaUrl:
-      'https://open.spotify.com/episode/4uLU6hMCjMI75M1A2tKUQC?si=sample',
+    mediaUrl: 'https://open.spotify.com/episode/4uLU6hMCjMI75M1A2tKUQC?si=sample',
   })
 
-  await expect(
-    page.getByTitle('Podcast player: Mapping the Night Sky'),
-  ).toHaveAttribute(
+  await expect(page.getByTitle('Podcast player: Mapping the Night Sky')).toHaveAttribute(
     'src',
     'https://open.spotify.com/embed/episode/4uLU6hMCjMI75M1A2tKUQC',
   )
-  await expect(
-    page.getByRole('link', { name: 'Open original media' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Open original media' })).toHaveCount(0)
 })
 
 test('links unsupported media to its original URL without embedding it', async ({
@@ -166,18 +150,17 @@ test('links unsupported media to its original URL without embedding it', async (
     mediaUrl: 'https://media.example.test/documentary',
   })
 
-  await expect(
-    page.getByRole('link', { name: 'Open original media' }),
-  ).toHaveAttribute('href', 'https://media.example.test/documentary')
+  await expect(page.getByRole('link', { name: 'Open original media' })).toHaveAttribute(
+    'href',
+    'https://media.example.test/documentary',
+  )
   await expect(page.locator('iframe')).toHaveCount(0)
 })
 
 test('keeps the page usable when the media URL is invalid and thumbnail fails', async ({
   page,
 }) => {
-  await page.route('https://images.example.test/broken.jpg', (route) =>
-    route.abort(),
-  )
+  await page.route('https://images.example.test/broken.jpg', (route) => route.abort())
   await openContentWithMedia(page, {
     ...publicContent,
     type: 'PODCAST',
@@ -185,13 +168,9 @@ test('keeps the page usable when the media URL is invalid and thumbnail fails', 
     thumbnail: 'https://images.example.test/broken.jpg',
   })
 
-  await expect(
-    page.getByRole('heading', { name: 'Mapping the Night Sky' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mapping the Night Sky' })).toBeVisible()
   await expect(page.locator('iframe')).toHaveCount(0)
-  await expect(
-    page.getByRole('link', { name: 'Open original media' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Open original media' })).toHaveCount(0)
   await expect(
     page.getByRole('img', { name: 'Abstract story illustration' }),
   ).toBeVisible()
