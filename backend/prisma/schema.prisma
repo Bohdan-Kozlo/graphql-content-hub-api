@@ -52,6 +52,7 @@ model User {
   reactions      Reaction[]
   subscriptions  Subscription[]
   views          View[]
+  readingHistory  ReadingHistory[]
   notifications  Notification[]
 }
 
@@ -89,6 +90,7 @@ model Content {
   comments     Comment[]
   reactions    Reaction[]
   views        View[]
+  readingHistory ReadingHistory[]
 
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -180,8 +182,23 @@ model View {
   content     Content      @relation(fields: [contentId], references: [id])
   contentId   String
 
+  requestId   String       @unique
+
   viewedAt    DateTime     @default(now())
   duration    Int?
+}
+
+model ReadingHistory {
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+
+  content     Content  @relation(fields: [contentId], references: [id])
+  contentId   String
+
+  lastViewedAt DateTime @default(now())
+
+  @@id([userId, contentId])
+  @@index([userId, lastViewedAt])
 }
 
 model Notification {

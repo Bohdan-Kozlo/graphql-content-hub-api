@@ -19,6 +19,8 @@ describe('Public Content GraphQL HTTP', () => {
   let publishedId: string;
   let draftId: string;
   let draftCommentId: string;
+  let readerEmail: string;
+  let otherReaderEmail: string;
 
   const query = `query PublicContent($id: String!) {
     content(id: $id) {
@@ -78,11 +80,12 @@ describe('Public Content GraphQL HTTP', () => {
       await prisma.comment.create({ data: { contentId: draftId, userId: authorId, text: 'Private comment' } })
     ).id;
     await prisma.reaction.create({ data: { contentId: draftId, userId: authorId, type: ReactionType.LIKE } });
-    await prisma.view.create({ data: { contentId: draftId, userId: authorId } });
+    await prisma.view.create({ data: { contentId: draftId, userId: authorId, requestId: randomUUID() } });
   });
 
   afterAll(async () => {
     if (prisma) {
+      await prisma.readingHistory.deleteMany({ where: { contentId: { in: [publishedId, draftId].filter(Boolean) } } });
       await prisma.view.deleteMany({ where: { contentId: { in: [publishedId, draftId].filter(Boolean) } } });
       await prisma.reaction.deleteMany({ where: { contentId: { in: [publishedId, draftId].filter(Boolean) } } });
       await prisma.comment.deleteMany({ where: { contentId: { in: [publishedId, draftId].filter(Boolean) } } });
@@ -90,6 +93,8 @@ describe('Public Content GraphQL HTTP', () => {
       if (tagId) await prisma.tag.delete({ where: { id: tagId } });
       if (categoryId) await prisma.category.delete({ where: { id: categoryId } });
       if (sourceId) await prisma.source.delete({ where: { id: sourceId } });
+      if (readerEmail) await prisma.user.delete({ where: { email: readerEmail } });
+      if (otherReaderEmail) await prisma.user.delete({ where: { email: otherReaderEmail } });
       if (authorId) await prisma.user.delete({ where: { id: authorId } });
     }
     if (app) await app.close();
@@ -182,5 +187,84 @@ describe('Public Content GraphQL HTTP', () => {
       .send({ query: `query { commentsByContent(contentId: "${publishedId}") { user { email } } }` });
     expect(privateUser.body.errors).toBeDefined();
     expect(JSON.stringify(privateUser.body)).not.toContain(`${marker}@example.test`);
+  });
+
+  it('counts each view request once and returns only the reader’s paginated history', async () => {
+    readerEmail = `reader-${marker}@example.test`;
+    otherReaderEmail = `other-reader-${marker}@example.test`;
+    const signup = async (email: string, username: string) => {
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query: `mutation { signup(data: { email: "${email}", username: "${username}", password: "password123" }) { accessToken } }`,
+        });
+      expect(response.body.errors).toBeUndefined();
+      return response.body.data.signup.accessToken as string;
+    };
+    const readerToken = await signup(readerEmail, 'history-reader');
+    const otherReaderToken = await signup(otherReaderEmail, 'other-history-reader');
+
+    const countBefore = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({ query: `query { viewCount(contentId: "${publishedId}") }` });
+
+    const guestRequestId = randomUUID();
+    const createGuestView = () =>
+      request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+          query: `mutation { createView(data: { contentId: "${publishedId}", requestId: "${guestRequestId}" }) { id } }`,
+        });
+    expect((await createGuestView()).body.errors).toBeUndefined();
+    expect((await createGuestView()).body.errors).toBeUndefined();
+
+    const readerRequestId = randomUUID();
+    const createReaderView = () =>
+      request(app.getHttpServer())
+        .post('/graphql')
+        .set('Authorization', `Bearer ${readerToken}`)
+        .send({
+          query: `mutation { createView(data: { contentId: "${publishedId}", requestId: "${readerRequestId}" }) { id } }`,
+        });
+    expect((await createReaderView()).body.errors).toBeUndefined();
+    expect((await createReaderView()).body.errors).toBeUndefined();
+
+    const reusedByAnotherReader = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Authorization', `Bearer ${otherReaderToken}`)
+      .send({
+        query: `mutation { createView(data: { contentId: "${publishedId}", requestId: "${readerRequestId}" }) { user { id } } }`,
+      });
+    expect(reusedByAnotherReader.body.errors).toBeDefined();
+    expect(JSON.stringify(reusedByAnotherReader.body)).not.toContain('history-reader');
+
+    const countAfter = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({ query: `query { viewCount(contentId: "${publishedId}") }` });
+    expect(countAfter.body.data.viewCount).toBe(countBefore.body.data.viewCount + 2);
+
+    const history = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Authorization', `Bearer ${readerToken}`)
+      .send({
+        query: 'query { myViewHistory(first: 20) { items { id title } endCursor hasMore } }',
+      });
+    expect(history.body.errors).toBeUndefined();
+    expect(history.body.data.myViewHistory).toMatchObject({
+      items: [{ id: publishedId, title: 'A public story' }],
+      hasMore: false,
+    });
+
+    const otherHistory = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Authorization', `Bearer ${otherReaderToken}`)
+      .send({ query: 'query { myViewHistory(first: 20) { items { id } } }' });
+    expect(otherHistory.body.errors).toBeUndefined();
+    expect(otherHistory.body.data.myViewHistory.items).toEqual([]);
+
+    const anonymousHistory = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({ query: 'query { myViewHistory(first: 20) { items { id } } }' });
+    expect(anonymousHistory.body.errors).toBeDefined();
   });
 });

@@ -153,6 +153,7 @@ type Query {
   savedContents(first: Int! = 12, after: String): ContentPageModel!
   viewsByContent(contentId: String!): [ViewModel!]!
   myViews: [ViewModel!]!
+  myViewHistory(first: Int! = 20, after: String): ContentPageModel!
   viewCount(contentId: String!): Float!
   uniqueViewCount(contentId: String!): Float!
   viewStats(contentId: String!): String!
@@ -301,5 +302,6 @@ enum ContentReactionType {
 
 input CreateViewInput {
   contentId: String!
+  requestId: String!
   duration: Float
 }

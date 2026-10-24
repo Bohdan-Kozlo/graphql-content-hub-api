@@ -53,9 +53,6 @@ export const loginAndGetAccessToken = async (
   return response.body.data.login.accessToken;
 };
 
-export const authorizedRequest = (
-  app: INestApplication,
-  token: string,
-) => {
+export const authorizedRequest = (app: INestApplication, token: string) => {
   return request(app.getHttpServer()).post('/graphql').set('Authorization', `Bearer ${token}`);
 };

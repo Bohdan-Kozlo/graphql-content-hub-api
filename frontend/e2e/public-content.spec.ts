@@ -52,6 +52,8 @@ test('opens a published story from its stable URL', async ({ page }) => {
           },
         },
       })
+    } else if (request.operationName === 'CreateView') {
+      await route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
     } else {
       expect(request.variables?.id).toBe('story-123')
       await route.fulfill({ json: { data: { content: publicContent } } })
@@ -103,9 +105,15 @@ test('does not display a draft on its public URL', async ({ page }) => {
 })
 
 async function openContentWithMedia(page: Page, content: typeof publicContent) {
-  await page.route('**/graphql', (route) =>
-    route.fulfill({ json: { data: { content } } }),
-  )
+  await page.route('**/graphql', (route) => {
+    const { operationName } = route.request().postDataJSON() as { operationName?: string }
+    return route.fulfill({
+      json:
+        operationName === 'CreateView'
+          ? { data: { createView: { id: 'view-1' } } }
+          : { data: { content } },
+    })
+  })
   await page.goto(`/content/${content.id}`)
 }
 

@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateViewInput } from './dto/create-view.input';
 import { ContentService } from '../content/content.service';
 import { ContentStatus } from '../../../prisma/generated/client';
 import { publicAuthorSelect, publicContentInclude } from '../content/public-content.include';
+import { Prisma } from '../../../prisma/generated/client';
 
 @Injectable()
 export class ViewService {
@@ -18,17 +19,43 @@ export class ViewService {
       throw new NotFoundException('Content not found');
     }
 
-    return this.prismaService.view.create({
-      data: {
-        contentId: data.contentId,
-        userId: userId || null,
-        duration: data.duration,
-      },
-      include: {
-        user: { select: publicAuthorSelect },
-        content: { include: publicContentInclude },
-      },
-    });
+    const include = {
+      user: { select: publicAuthorSelect },
+      content: { include: publicContentInclude },
+    } as const;
+
+    try {
+      const view = await this.prismaService.$transaction(async (prisma) => {
+        const created = await prisma.view.create({
+          data: {
+            contentId: data.contentId,
+            userId: userId || null,
+            requestId: data.requestId,
+            duration: data.duration,
+          },
+          include,
+        });
+        if (userId) {
+          await prisma.readingHistory.upsert({
+            where: { userId_contentId: { userId, contentId: data.contentId } },
+            create: { userId, contentId: data.contentId },
+            update: { lastViewedAt: new Date() },
+          });
+        }
+        return created;
+      });
+      return view;
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+      const existing = await this.prismaService.view.findUniqueOrThrow({
+        where: { requestId: data.requestId },
+        include,
+      });
+      if (existing.userId !== (userId || null)) {
+        throw new ConflictException('View request belongs to another reader');
+      }
+      return existing;
+    }
   }
 
   async findByContentId(contentId: string) {
@@ -55,6 +82,34 @@ export class ViewService {
         viewedAt: 'desc',
       },
     });
+  }
+
+  async findHistory(userId: string, first: number, after: string | undefined) {
+    const where = { userId, content: { is: { status: ContentStatus.PUBLISHED } } };
+    if (after) {
+      const cursor = await this.prismaService.readingHistory.findUnique({
+        where: { userId_contentId: { userId, contentId: after } },
+        select: { contentId: true },
+      });
+      if (!cursor) throw new BadRequestException('Invalid history cursor');
+    }
+    const history = await this.prismaService.readingHistory.findMany({
+      where,
+      orderBy: [{ lastViewedAt: 'desc' }, { contentId: 'desc' }],
+      take: first + 1,
+      cursor: after ? { userId_contentId: { userId, contentId: after } } : undefined,
+      skip: after ? 1 : undefined,
+      include: { content: { include: publicContentInclude } },
+    });
+    const items = await this.contentService.withReactionState(
+      history.slice(0, first).map(({ content }) => content),
+      userId,
+    );
+    return {
+      items,
+      endCursor: history.at(first - 1)?.contentId ?? null,
+      hasMore: history.length > first,
+    };
   }
 
   async getViewCount(contentId: string) {

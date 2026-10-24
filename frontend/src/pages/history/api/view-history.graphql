@@ -1,0 +1,22 @@
+query ViewHistory($first: Int!, $after: String) {
+  myViewHistory(first: $first, after: $after) {
+    items {
+      id
+      title
+      description
+      type
+      status
+      thumbnail
+      publishedAt
+      likeCount
+      liked
+      saved
+      author {
+        id
+        username
+      }
+    }
+    endCursor
+    hasMore
+  }
+}

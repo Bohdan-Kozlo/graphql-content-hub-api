@@ -1,16 +1,30 @@
-import { useQuery } from '@apollo/client/react'
+import { useEffect, useRef } from 'react'
+import { useMutation, useQuery } from '@apollo/client/react'
 import { useParams } from 'react-router'
-import { PublicContentDocument } from '@/shared/api/gql/graphql'
+import { CreateViewDocument, PublicContentDocument } from '@/shared/api/gql/graphql'
 import { ContentArticle } from './ContentArticle'
 import { StatusMessage } from './StatusMessage'
 
 export default function PublicContentPage() {
   const { id } = useParams<'id'>()
+  const viewRequest = useRef<{ contentId: string; requestId: string } | null>(null)
+  const [createView] = useMutation(CreateViewDocument)
   const { data, loading, error } = useQuery(PublicContentDocument, {
     variables: { id: id ?? '' },
     skip: !id,
     fetchPolicy: 'network-only',
   })
+  const content = data?.content
+
+  useEffect(() => {
+    if (!content || content.status !== 'PUBLISHED') return
+    if (viewRequest.current?.contentId === content.id) return
+    const requestId = crypto.randomUUID()
+    viewRequest.current = { contentId: content.id, requestId }
+    void createView({ variables: { data: { contentId: content.id, requestId } } }).catch(
+      () => undefined,
+    )
+  }, [content, createView])
 
   if (loading) {
     return (
@@ -28,7 +42,6 @@ export default function PublicContentPage() {
     )
   }
 
-  const content = data?.content
   if (!content || content.status !== 'PUBLISHED') {
     return (
       <StatusMessage
@@ -37,5 +50,6 @@ export default function PublicContentPage() {
       />
     )
   }
+
   return <ContentArticle key={content.id} content={content} />
 }

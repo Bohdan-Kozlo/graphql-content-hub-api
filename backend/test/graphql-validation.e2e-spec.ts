@@ -23,7 +23,7 @@ describe('GraphQL argument validation', () => {
     '{ popularTags(limit: 0) { id } }',
     '{ publishedContents(first: 0) { items { id } } }',
     'mutation { requestPasswordReset(email: "not-an-email") }',
-    'mutation { createView(data: { contentId: "" }) { id } }',
+    'mutation { createView(data: { contentId: "", requestId: "request-1" }) { id } }',
     'mutation { signup(data: { email: "valid@example.test", username: "  ", password: "password123" }) { accessToken } }',
   ])('rejects invalid input before the resolver service: %s', async (query) => {
     const response = await request(app.getHttpServer()).post('/graphql').send({ query });

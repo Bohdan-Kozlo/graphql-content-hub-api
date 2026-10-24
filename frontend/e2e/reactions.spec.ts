@@ -7,6 +7,7 @@ const account = {
   roles: ['USER'],
 }
 const story = {
+  __typename: 'ContentModel',
   id: 'story-1',
   title: 'A reaction-ready story',
   description: 'A story readers can save.',
@@ -58,6 +59,8 @@ test('reader can like and save a catalog story, then open Saved', async ({ page 
       return route.fulfill({
         json: { data: { refreshTokens: { accessToken: 'access-token', account } } },
       })
+    if (query.includes('CreateView'))
+      return route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
     if (query.includes('DiscoveryFilters'))
       return route.fulfill({ json: { data: { categories: [], tags: [] } } })
     if (query.includes('toggleContentReaction')) {
@@ -66,7 +69,15 @@ test('reader can like and save a catalog story, then open Saved', async ({ page 
         state = { ...state, liked: !state.liked, likeCount: state.liked ? 0 : 1 }
       } else state = { ...state, saved: !state.saved }
       return route.fulfill({
-        json: { data: { toggleContentReaction: { contentId: story.id, ...state } } },
+        json: {
+          data: {
+            toggleContentReaction: {
+              __typename: 'ContentReactionStateModel',
+              contentId: story.id,
+              ...state,
+            },
+          },
+        },
       })
     }
     if (query.includes('SavedContents')) {
@@ -118,6 +129,9 @@ test('reader can react on the content page', async ({ page }) => {
         json: { data: { refreshTokens: { accessToken: 'access-token', account } } },
       })
     }
+    if (query.includes('CreateView')) {
+      return route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
+    }
     if (query.includes('toggleContentReaction')) {
       const type = (variables?.data as { type?: string } | undefined)?.type
       state =
@@ -125,7 +139,15 @@ test('reader can react on the content page', async ({ page }) => {
           ? { ...state, liked: !state.liked, likeCount: state.liked ? 0 : 1 }
           : { ...state, saved: !state.saved }
       return route.fulfill({
-        json: { data: { toggleContentReaction: { contentId: story.id, ...state } } },
+        json: {
+          data: {
+            toggleContentReaction: {
+              __typename: 'ContentReactionStateModel',
+              contentId: story.id,
+              ...state,
+            },
+          },
+        },
       })
     }
     return route.fulfill({

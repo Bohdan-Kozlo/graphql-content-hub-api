@@ -9,12 +9,16 @@ import { Roles } from '../../common/decorators/reles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Role } from '../../../prisma/generated/client';
 import { ContentIdArgs, LimitArgs } from '../../common/dto/graphql-args';
+import { ContentPageModel } from '../content/dto/content-page.model';
+import { ViewHistoryArgs } from './dto/view-history.args';
+import { OptionalAccessGuard } from '../../common/guards/optional-access.guard';
 
 @Resolver(() => ViewModel)
 export class ViewResolver {
   constructor(private readonly viewService: ViewService) {}
 
   @Mutation(() => ViewModel)
+  @UseGuards(OptionalAccessGuard)
   async createView(@Args('data') data: CreateViewInput, @CurrentUser('id') userId?: string) {
     return this.viewService.create(data, userId);
   }
@@ -30,6 +34,12 @@ export class ViewResolver {
   @Query(() => [ViewModel])
   async myViews(@CurrentUser('id') userId: string) {
     return this.viewService.findByUserId(userId);
+  }
+
+  @UseGuards(AccessGuard)
+  @Query(() => ContentPageModel)
+  async myViewHistory(@Args() args: ViewHistoryArgs, @CurrentUser('id') userId: string) {
+    return this.viewService.findHistory(userId, args.first, args.after);
   }
 
   @Query(() => Number)

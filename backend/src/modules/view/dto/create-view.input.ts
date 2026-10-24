@@ -8,6 +8,11 @@ export class CreateViewInput {
   @IsNotEmpty()
   contentId: string;
 
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  requestId: string;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsNumber()

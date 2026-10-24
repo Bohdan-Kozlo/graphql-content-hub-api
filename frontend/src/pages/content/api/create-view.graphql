@@ -1,0 +1,5 @@
+mutation CreateView($data: CreateViewInput!) {
+  createView(data: $data) {
+    id
+  }
+}

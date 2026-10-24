@@ -385,12 +385,32 @@ async function main() {
       await tx.view.upsert({
         where: { id: seedId('view:first') },
         update: {},
-        create: { id: seedId('view:first'), contentId: firstStory, userId: reader },
+        create: {
+          id: seedId('view:first'),
+          contentId: firstStory,
+          userId: reader,
+          requestId: seedId('view-request:first'),
+        },
+      });
+      await tx.readingHistory.upsert({
+        where: { userId_contentId: { userId: reader, contentId: firstStory } },
+        update: {},
+        create: { userId: reader, contentId: firstStory },
       });
       await tx.view.upsert({
         where: { id: seedId('view:second') },
         update: {},
-        create: { id: seedId('view:second'), contentId: secondStory, userId: reader },
+        create: {
+          id: seedId('view:second'),
+          contentId: secondStory,
+          userId: reader,
+          requestId: seedId('view-request:second'),
+        },
+      });
+      await tx.readingHistory.upsert({
+        where: { userId_contentId: { userId: reader, contentId: secondStory } },
+        update: {},
+        create: { userId: reader, contentId: secondStory },
       });
       await tx.subscription.upsert({
         where: { id: seedId('subscription:maya') },
