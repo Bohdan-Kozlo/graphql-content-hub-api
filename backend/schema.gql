@@ -161,6 +161,8 @@ type Query {
   uniqueViewCount(contentId: String!): Float!
   viewStats(contentId: String!): String!
   mostViewedContent(limit: Float! = 10): String!
+  myFollowedAuthors: [PublicAuthorModel!]!
+  followingFeed(first: Int! = 12, after: String): ContentPageModel!
 }
 
 input CreateSourceInput {
@@ -202,6 +204,8 @@ type Mutation {
   deleteTag(id: String!): Boolean!
   toggleContentReaction(data: ToggleContentReactionInput!): ContentReactionStateModel!
   createView(data: CreateViewInput!): ViewModel!
+  followAuthor(id: String!): PublicAuthorModel!
+  unfollowAuthor(id: String!): Boolean!
 }
 
 input LoginInput {

@@ -70,6 +70,24 @@ export class ContentService {
   async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}, userId: string | null = null) {
     const where = this.publishedContentWhere(filters);
 
+    return this.findPublishedWhere(where, first, after, userId);
+  }
+
+  async findPublishedByAuthors(authorIds: string[], first: number, after: string | undefined, userId: string) {
+    return this.findPublishedWhere(
+      { status: ContentStatus.PUBLISHED, authorId: { in: authorIds } },
+      first,
+      after,
+      userId,
+    );
+  }
+
+  private async findPublishedWhere(
+    where: Prisma.ContentWhereInput,
+    first: number,
+    after: string | undefined,
+    userId: string | null,
+  ) {
     if (after) {
       const cursor = await this.prismaService.content.findFirst({
         where: { ...where, id: after },

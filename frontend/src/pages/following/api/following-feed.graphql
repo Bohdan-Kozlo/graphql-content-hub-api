@@ -1,0 +1,22 @@
+query FollowingFeed($first: Int!, $after: String) {
+  followingFeed(first: $first, after: $after) {
+    items {
+      id
+      title
+      description
+      status
+      publishedAt
+      viewCount
+      author {
+        id
+        username
+      }
+    }
+    endCursor
+    hasMore
+  }
+  myFollowedAuthors {
+    id
+    username
+  }
+}

@@ -1,0 +1,15 @@
+query ProfileFollowedAuthors {
+  myFollowedAuthors {
+    id
+  }
+}
+
+mutation FollowAuthor($id: String!) {
+  followAuthor(id: $id) {
+    id
+  }
+}
+
+mutation UnfollowAuthor($id: String!) {
+  unfollowAuthor(id: $id)
+}

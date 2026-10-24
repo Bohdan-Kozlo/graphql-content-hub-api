@@ -34,6 +34,9 @@ const AccountHomePage = lazy(() =>
 const SavedPage = lazy(() =>
   import('@/pages/saved').then(({ SavedPage }) => ({ default: SavedPage })),
 )
+const FollowingPage = lazy(() =>
+  import('@/pages/following').then(({ FollowingPage }) => ({ default: FollowingPage })),
+)
 const HistoryPage = lazy(() =>
   import('@/pages/history').then(({ HistoryPage }) => ({ default: HistoryPage })),
 )
@@ -138,6 +141,14 @@ export default function App() {
             element={
               <ProtectedAccountRoute ready={ready}>
                 <SavedPage />
+              </ProtectedAccountRoute>
+            }
+          />
+          <Route
+            path="/following"
+            element={
+              <ProtectedAccountRoute ready={ready}>
+                <FollowingPage />
               </ProtectedAccountRoute>
             }
           />

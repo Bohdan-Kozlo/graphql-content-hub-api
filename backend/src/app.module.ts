@@ -13,6 +13,7 @@ import { TagModule } from './modules/tag/tag.module';
 import { SourceModule } from './modules/source/source.module';
 import { ReactionModule } from './modules/reaction/reaction.module';
 import { ViewModule } from './modules/view/view.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 import type { Request, Response } from 'express';
 import { ValidationPipe } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
@@ -41,6 +42,7 @@ import { APP_PIPE } from '@nestjs/core';
     SourceModule,
     ReactionModule,
     ViewModule,
+    SubscriptionModule,
   ],
   controllers: [],
   providers: [

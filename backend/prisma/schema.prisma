@@ -186,6 +186,8 @@ model Subscription {
   type        SubscriptionType
   targetId    String            // Depending on type, refers to different table
   createdAt   DateTime          @default(now())
+
+  @@unique([userId, type, targetId])
 }
 
 model View {

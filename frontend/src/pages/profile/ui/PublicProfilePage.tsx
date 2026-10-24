@@ -5,6 +5,7 @@ import { getAccount, subscribeSession } from '@/entities/account'
 import { usePublishedContents, ViewCount } from '@/entities/content'
 import { PublicProfileDocument } from '@/shared/api/gql/graphql'
 import { Avatar } from '@/shared/ui/avatar'
+import { AuthorFollowButton } from './AuthorFollowButton'
 
 export default function PublicProfilePage() {
   const { id } = useParams<'id'>()
@@ -71,6 +72,11 @@ export default function PublicProfilePage() {
               Edit profile
             </Link>
           )}
+          <AuthorFollowButton
+            authorId={profile.id}
+            signedIn={Boolean(account)}
+            isSelf={account?.id === profile.id}
+          />
         </div>
       </div>
       <section aria-labelledby="profile-stories" className="pt-12">

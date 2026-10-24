@@ -21,7 +21,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-hub-page text-hub-ink">
       <header className="border-b border-hub-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <Link
             to="/"
             className="font-hub-display text-2xl font-semibold tracking-tight text-hub-accent"
@@ -34,10 +34,13 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           </span>
           <nav
             aria-label="Account"
-            className="flex items-center gap-3 text-sm font-semibold"
+            className="flex flex-wrap items-center gap-3 text-sm font-semibold"
           >
             {account ? (
               <>
+                <Link to="/following" className="text-hub-accent">
+                  Following
+                </Link>
                 <Link to="/saved" className="text-hub-accent">
                   Saved
                 </Link>
