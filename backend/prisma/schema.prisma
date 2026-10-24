@@ -160,6 +160,7 @@ model Comment {
   replies     Comment[]   @relation("CommentReplies")
 
   text        String
+  isDeleted   Boolean     @default(false)
   createdAt   DateTime    @default(now())
 }
 

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { useMutation, useQuery } from '@apollo/client/react'
 import { useParams } from 'react-router'
 import { CreateViewDocument, PublicContentDocument } from '@/shared/api/gql/graphql'
 import { ContentArticle } from './ContentArticle'
 import { StatusMessage } from './StatusMessage'
+import { ContentDiscussion } from './ContentDiscussion'
 
 export default function PublicContentPage() {
   const { id } = useParams<'id'>()
@@ -51,5 +52,10 @@ export default function PublicContentPage() {
     )
   }
 
-  return <ContentArticle key={content.id} content={content} />
+  return (
+    <Fragment key={content.id}>
+      <ContentArticle content={content} />
+      <ContentDiscussion contentId={content.id} />
+    </Fragment>
+  )
 }

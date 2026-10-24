@@ -94,6 +94,7 @@ type CommentModel {
   parent: CommentModel
   replies: [CommentModel!]
   text: String!
+  isDeleted: Boolean!
   createdAt: DateTime!
 }
 

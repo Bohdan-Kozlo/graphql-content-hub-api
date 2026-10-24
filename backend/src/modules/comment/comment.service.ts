@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 import { CreateCommentInput, UpdateCommentInput } from './dto/create-comment.input';
-import { ContentStatus } from '../../../prisma/generated/client';
+import { ContentStatus, Role } from '../../../prisma/generated/client';
 import { publicAuthorSelect, publicContentInclude } from '../content/public-content.include';
 
 @Injectable()
@@ -23,8 +23,11 @@ export class CommentService {
       const parentComment = await this.prismaService.comment.findFirst({
         where: { id: data.parentId, contentId: data.contentId },
       });
-      if (!parentComment) {
+      if (!parentComment || parentComment.isDeleted) {
         throw new NotFoundException('Parent comment not found');
+      }
+      if (parentComment.parentId) {
+        throw new BadRequestException('Replies are limited to one level');
       }
     }
 
@@ -101,6 +104,7 @@ export class CommentService {
       where: {
         id,
         userId, // User can only update their own comments
+        isDeleted: false,
       },
     });
 
@@ -121,10 +125,12 @@ export class CommentService {
   }
 
   async remove(id: string, userId: string) {
+    const user = await this.prismaService.user.findUnique({ where: { id: userId }, select: { role: true } });
     const comment = await this.prismaService.comment.findFirst({
       where: {
         id,
-        userId, // User can only delete their own comments
+        isDeleted: false,
+        ...(user?.role.includes(Role.ADMIN) ? {} : { userId }),
       },
     });
 
@@ -132,8 +138,9 @@ export class CommentService {
       throw new NotFoundException('Comment not found or not authorized');
     }
 
-    await this.prismaService.comment.delete({
+    await this.prismaService.comment.update({
       where: { id },
+      data: { text: '[deleted]', isDeleted: true },
     });
 
     return true;

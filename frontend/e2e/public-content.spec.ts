@@ -55,6 +55,8 @@ test('opens a published story from its stable URL', async ({ page }) => {
       })
     } else if (request.operationName === 'CreateView') {
       await route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
+    } else if (request.operationName === 'ContentComments') {
+      await route.fulfill({ json: { data: { commentsByContent: [] } } })
     } else {
       expect(request.variables?.id).toBe('story-123')
       await route.fulfill({ json: { data: { content: publicContent } } })
@@ -112,7 +114,9 @@ async function openContentWithMedia(page: Page, content: typeof publicContent) {
       json:
         operationName === 'CreateView'
           ? { data: { createView: { id: 'view-1' } } }
-          : { data: { content } },
+          : operationName === 'ContentComments'
+            ? { data: { commentsByContent: [] } }
+            : { data: { content } },
     })
   })
   await page.goto(`/content/${content.id}`)

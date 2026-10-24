@@ -1,0 +1,40 @@
+query ContentComments($contentId: String!) {
+  commentsByContent(contentId: $contentId) {
+    id
+    text
+    isDeleted
+    createdAt
+    user {
+      id
+      username
+      avatarUrl
+    }
+    replies {
+      id
+      text
+      isDeleted
+      createdAt
+      user {
+        id
+        username
+        avatarUrl
+      }
+    }
+  }
+}
+
+mutation CreateContentComment($data: CreateCommentInput!) {
+  createComment(data: $data) {
+    id
+  }
+}
+
+mutation UpdateContentComment($id: String!, $data: UpdateCommentInput!) {
+  updateComment(id: $id, data: $data) {
+    id
+  }
+}
+
+mutation DeleteContentComment($id: String!) {
+  deleteComment(id: $id)
+}

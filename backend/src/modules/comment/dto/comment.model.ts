@@ -23,6 +23,9 @@ export class CommentModel {
   @Field()
   text: string;
 
+  @Field()
+  isDeleted: boolean;
+
   @Field(() => Date)
   createdAt: Date;
 }
