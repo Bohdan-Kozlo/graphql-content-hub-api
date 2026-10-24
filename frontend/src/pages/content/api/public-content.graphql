@@ -9,6 +9,9 @@ query PublicContent($id: String!) {
     thumbnail
     status
     publishedAt
+    likeCount
+    liked
+    saved
     author {
       id
       username

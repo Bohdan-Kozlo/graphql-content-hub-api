@@ -24,6 +24,9 @@ query PublicCatalog(
       status
       thumbnail
       publishedAt
+      likeCount
+      liked
+      saved
       author {
         id
         username

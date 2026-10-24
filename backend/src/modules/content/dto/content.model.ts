@@ -51,6 +51,15 @@ export class ContentModel {
 
   @Field(() => [TagModel])
   tags: TagModel[];
+
+  @Field(() => Int)
+  likeCount: number;
+
+  @Field()
+  liked: boolean;
+
+  @Field()
+  saved: boolean;
 }
 
 registerEnumType(ContentType, { name: 'ContentType' });

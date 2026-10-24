@@ -1,22 +1,16 @@
-import { ObjectType, Field } from '@nestjs/graphql';
-import { Content, ReactionType } from '../../../../prisma/generated/client';
-import { ContentModel } from '../../content/dto/content.model';
-import { PublicAuthorModel } from '../../content/dto/public-author.model';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class ReactionModel {
+export class ContentReactionStateModel {
   @Field()
-  id: string;
+  contentId: string;
 
-  @Field(() => PublicAuthorModel)
-  user: PublicAuthorModel;
+  @Field()
+  liked: boolean;
 
-  @Field(() => ContentModel)
-  content: Content;
+  @Field()
+  saved: boolean;
 
-  @Field(() => String)
-  type: ReactionType;
-
-  @Field(() => Date)
-  createdAt: Date;
+  @Field(() => Int)
+  likeCount: number;
 }

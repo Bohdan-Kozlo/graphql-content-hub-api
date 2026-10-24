@@ -11,6 +11,9 @@ const publicContent = {
   type: 'ARTICLE',
   status: 'PUBLISHED',
   publishedAt: '2026-01-15T12:00:00.000Z',
+  likeCount: 0,
+  liked: false,
+  saved: false,
   author: {
     id: 'author-1',
     username: 'Alex Writer',

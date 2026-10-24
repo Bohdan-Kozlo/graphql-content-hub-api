@@ -1,0 +1,8 @@
+mutation ToggleContentReaction($data: ToggleContentReactionInput!) {
+  toggleContentReaction(data: $data) {
+    contentId
+    liked
+    saved
+    likeCount
+  }
+}

@@ -63,6 +63,9 @@ type ContentModel {
   source: SourceModel
   category: CategoryModel
   tags: [TagModel!]!
+  likeCount: Int!
+  liked: Boolean!
+  saved: Boolean!
 }
 
 enum ContentType {
@@ -111,12 +114,11 @@ type ContentPageModel {
   hasMore: Boolean!
 }
 
-type ReactionModel {
-  id: String!
-  user: PublicAuthorModel!
-  content: ContentModel!
-  type: String!
-  createdAt: DateTime!
+type ContentReactionStateModel {
+  contentId: String!
+  liked: Boolean!
+  saved: Boolean!
+  likeCount: Int!
 }
 
 type ViewModel {
@@ -148,10 +150,7 @@ type Query {
   createSource(data: CreateSourceInput!): SourceModel!
   updateSource(id: String!, data: UpdateSourceInput!): SourceModel!
   deleteSource(id: String!): Boolean!
-  reactionsByContent(contentId: String!): [ReactionModel!]!
-  myReactions: [ReactionModel!]!
-  reactionCounts(contentId: String!): String!
-  hasUserReacted(contentId: String!, type: String!): Boolean!
+  savedContents(first: Int! = 12, after: String): ContentPageModel!
   viewsByContent(contentId: String!): [ViewModel!]!
   myViews: [ViewModel!]!
   viewCount(contentId: String!): Float!
@@ -196,7 +195,7 @@ type Mutation {
   createTag(data: CreateTagInput!): TagModel!
   updateTag(id: String!, data: UpdateTagInput!): TagModel!
   deleteTag(id: String!): Boolean!
-  toggleReaction(data: ToggleReactionInput!): Boolean!
+  toggleContentReaction(data: ToggleContentReactionInput!): ContentReactionStateModel!
   createView(data: CreateViewInput!): ViewModel!
 }
 
@@ -290,9 +289,14 @@ input UpdateTagInput {
   name: String
 }
 
-input ToggleReactionInput {
+input ToggleContentReactionInput {
   contentId: String!
-  type: String!
+  type: ContentReactionType!
+}
+
+enum ContentReactionType {
+  LIKE
+  SAVE
 }
 
 input CreateViewInput {

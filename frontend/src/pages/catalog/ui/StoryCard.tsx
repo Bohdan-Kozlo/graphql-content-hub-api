@@ -1,10 +1,23 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import type { PublicCatalogQuery } from '@/shared/api/gql/graphql'
+import { ContentReactionControls } from '@/features/content-reaction'
+import { publishedDate } from '@/shared/lib/date'
 import { externalUrl } from '@/shared/lib/url'
 import { contentTypeNames } from '../model/catalog-filters'
 
-export type CatalogItem = PublicCatalogQuery['publishedContents']['items'][number]
+export type CatalogItem = {
+  id: string
+  title: string
+  description: string
+  type: 'ARTICLE' | 'VIDEO' | 'PODCAST' | 'NEWS'
+  thumbnail?: string | null
+  publishedAt?: string | null
+  likeCount: number
+  liked: boolean
+  saved: boolean
+  author: { id: string; username: string }
+  category?: { name: string } | null
+}
 type CardVariant = 'featured' | 'shelf' | 'list'
 
 const variantClasses: Record<
@@ -26,17 +39,6 @@ const variantClasses: Record<
     artwork: 'h-32 sm:h-44',
     title: 'text-2xl sm:text-3xl',
   },
-}
-
-function publishedDate(value: string | null | undefined) {
-  if (!value) return null
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return null
-  return new Intl.DateTimeFormat('en', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
 }
 
 function StoryArtwork({ item }: { item: CatalogItem }) {
@@ -108,6 +110,9 @@ export function StoryCard({
       >
         {item.author.username}
       </Link>
+      <div className="mt-4">
+        <ContentReactionControls content={item} />
+      </div>
     </article>
   )
 }

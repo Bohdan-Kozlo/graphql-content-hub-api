@@ -1,0 +1,22 @@
+query SavedContents($first: Int!, $after: String) {
+  savedContents(first: $first, after: $after) {
+    items {
+      id
+      title
+      description
+      type
+      status
+      thumbnail
+      publishedAt
+      likeCount
+      liked
+      saved
+      author {
+        id
+        username
+      }
+    }
+    endCursor
+    hasMore
+  }
+}

@@ -4,6 +4,7 @@ import { ContentModel } from './dto/content.model';
 import { CreateContentInput } from './dto/create-content.input';
 import { UseGuards } from '@nestjs/common';
 import { AccessGuard } from '../../common/guards/access.guard';
+import { OptionalAccessGuard } from '../../common/guards/optional-access.guard';
 import { CurrentUser } from '../../common/decorators/currentUser.decorator';
 import { UpdateContentArgs } from './dto/update-content.args';
 import { ContentPageModel } from './dto/content-page.model';
@@ -15,13 +16,15 @@ export class ContentResolver {
   constructor(private readonly contentService: ContentService) {}
 
   @Query(() => ContentModel, { nullable: true })
-  async content(@Args() args: IdArgs) {
-    return await this.contentService.findPublishedById(args.id);
+  @UseGuards(OptionalAccessGuard)
+  async content(@Args() args: IdArgs, @CurrentUser() userId: string | null) {
+    return await this.contentService.findPublishedById(args.id, userId);
   }
 
   @Query(() => ContentPageModel)
-  async publishedContents(@Args() args: PublishedContentsArgs) {
-    return this.contentService.findPublishedPage(args.first, args.after, args);
+  @UseGuards(OptionalAccessGuard)
+  async publishedContents(@Args() args: PublishedContentsArgs, @CurrentUser() userId: string | null) {
+    return this.contentService.findPublishedPage(args.first, args.after, args, userId);
   }
 
   @UseGuards(AccessGuard)

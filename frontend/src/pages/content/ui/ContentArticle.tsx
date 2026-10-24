@@ -3,6 +3,7 @@ import type { PublicContentQuery } from '@/shared/api/gql/graphql'
 import { Avatar } from '@/shared/ui/avatar'
 import PublicMedia from './PublicMedia'
 import { StoryDetails } from './StoryDetails'
+import { ContentReactionControls } from '@/features/content-reaction'
 
 type Story = NonNullable<PublicContentQuery['content']>
 
@@ -53,6 +54,9 @@ export function ContentArticle({ content }: { content: Story }) {
           <p className="mt-6 max-w-2xl text-lg leading-8 text-hub-muted sm:text-xl">
             {content.description}
           </p>
+          <div className="mt-7">
+            <ContentReactionControls content={content} />
+          </div>
 
           <div className="mt-9 flex items-center gap-3 border-t border-hub-line pt-6">
             <Avatar

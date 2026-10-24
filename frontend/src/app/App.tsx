@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
+import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { client } from './api/apollo-client'
 import {
@@ -25,6 +26,9 @@ const AccountPage = lazy(() =>
 const AccountHomePage = lazy(() =>
   import('@/pages/account').then(({ AccountHomePage }) => ({ default: AccountHomePage })),
 )
+const SavedPage = lazy(() =>
+  import('@/pages/saved').then(({ SavedPage }) => ({ default: SavedPage })),
+)
 const PublicProfilePage = lazy(() =>
   import('@/pages/profile').then(({ PublicProfilePage }) => ({
     default: PublicProfilePage,
@@ -44,7 +48,13 @@ const ResetPasswordPage = lazy(() =>
   })),
 )
 
-function ProtectedAccountRoute({ ready }: { ready: boolean }) {
+function ProtectedAccountRoute({
+  ready,
+  children,
+}: {
+  ready: boolean
+  children: ReactNode
+}) {
   const account = useSyncExternalStore(subscribeSession, getAccount)
   const location = useLocation()
 
@@ -52,7 +62,7 @@ function ProtectedAccountRoute({ ready }: { ready: boolean }) {
   if (!account) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
-  return <AccountHomePage />
+  return children
 }
 
 function AccountAccessRoute({
@@ -101,7 +111,22 @@ export default function App() {
             path="/signup"
             element={<AccountAccessRoute ready={ready} mode="signup" />}
           />
-          <Route path="/account" element={<ProtectedAccountRoute ready={ready} />} />
+          <Route
+            path="/account"
+            element={
+              <ProtectedAccountRoute ready={ready}>
+                <AccountHomePage />
+              </ProtectedAccountRoute>
+            }
+          />
+          <Route
+            path="/saved"
+            element={
+              <ProtectedAccountRoute ready={ready}>
+                <SavedPage />
+              </ProtectedAccountRoute>
+            }
+          />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<NotFoundPage />} />

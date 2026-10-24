@@ -3,7 +3,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateContentInput } from './dto/create-content.input';
 import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
-import { ContentStatus, ContentType, Prisma } from '../../../prisma/generated/client';
+import { ContentStatus, ContentType, Prisma, ReactionType } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
 
 type CatalogFilters = {
@@ -13,6 +13,9 @@ type CatalogFilters = {
   tagId?: string;
   authorId?: string;
 };
+
+type PublicContent = Prisma.ContentGetPayload<{ include: typeof publicContentInclude }>;
+type ContentWithReactionState = PublicContent & { likeCount: number; liked: boolean; saved: boolean };
 
 @Injectable()
 export class ContentService {
@@ -27,7 +30,7 @@ export class ContentService {
       throw new BadRequestException('User not found');
     }
 
-    return this.prismaService.content.create({
+    const content = await this.prismaService.content.create({
       data: {
         title: data.title,
         description: data.description,
@@ -44,9 +47,10 @@ export class ContentService {
       },
       include: publicContentInclude,
     });
+    return (await this.withReactionState([content], userId))[0];
   }
 
-  async findPublishedById(id: string) {
+  async findPublishedById(id: string, userId: string | null = null): Promise<ContentWithReactionState | null> {
     const content = await this.prismaService.content.findFirst({
       where: {
         id,
@@ -54,27 +58,12 @@ export class ContentService {
       },
       include: publicContentInclude,
     });
-    return content;
+    if (!content) return null;
+    return (await this.withReactionState([content], userId))[0];
   }
 
-  async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}) {
-    const term = filters.search?.trim();
-    const where: Prisma.ContentWhereInput = {
-      status: ContentStatus.PUBLISHED,
-      ...(term
-        ? {
-            OR: [
-              { title: { contains: term, mode: 'insensitive' } },
-              { description: { contains: term, mode: 'insensitive' } },
-              { body: { contains: term, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-      ...(filters.type ? { type: filters.type } : {}),
-      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
-      ...(filters.tagId ? { tags: { some: { id: filters.tagId } } } : {}),
-      ...(filters.authorId ? { authorId: filters.authorId } : {}),
-    };
+  async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}, userId: string | null = null) {
+    const where = this.publishedContentWhere(filters);
 
     if (after) {
       const cursor = await this.prismaService.content.findFirst({
@@ -88,15 +77,87 @@ export class ContentService {
       where,
       orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
       take: first + 1,
-      ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+      cursor: after ? { id: after } : undefined,
+      skip: after ? 1 : undefined,
       include: publicContentInclude,
     });
-    const items = contents.slice(0, first);
+    const items = await this.withReactionState(contents.slice(0, first), userId);
 
     return {
       items,
       endCursor: items.at(-1)?.id ?? null,
       hasMore: contents.length > first,
+    };
+  }
+
+  async withReactionState(contents: PublicContent[], userId: string | null): Promise<ContentWithReactionState[]> {
+    if (contents.length === 0) return [];
+
+    const contentIds = contents.map(({ id }) => id);
+    const [likeCounts, viewerReactionTypes] = await Promise.all([
+      this.likeCountsByContentId(contentIds),
+      this.viewerReactionTypesByContentId(contentIds, userId),
+    ]);
+
+    return contents.map((content) =>
+      this.contentWithReactionState(content, likeCounts, viewerReactionTypes.get(content.id)),
+    );
+  }
+
+  private publishedContentWhere(filters: CatalogFilters): Prisma.ContentWhereInput {
+    const where: Prisma.ContentWhereInput = { status: ContentStatus.PUBLISHED };
+    const searchTerm = filters.search?.trim();
+
+    if (searchTerm) {
+      where.OR = [
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
+        { body: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+    if (filters.type) where.type = filters.type;
+    if (filters.categoryId) where.categoryId = filters.categoryId;
+    if (filters.tagId) where.tags = { some: { id: filters.tagId } };
+    if (filters.authorId) where.authorId = filters.authorId;
+
+    return where;
+  }
+
+  private async likeCountsByContentId(contentIds: string[]) {
+    const counts = await this.prismaService.reaction.groupBy({
+      by: ['contentId'],
+      where: { contentId: { in: contentIds }, type: ReactionType.LIKE },
+      _count: { _all: true },
+    });
+    return new Map(counts.map((count) => [count.contentId, count._count._all]));
+  }
+
+  private async viewerReactionTypesByContentId(contentIds: string[], userId: string | null) {
+    if (!userId) return new Map<string, Set<ReactionType>>();
+
+    const reactions = await this.prismaService.reaction.findMany({
+      where: { userId, contentId: { in: contentIds } },
+      select: { contentId: true, type: true },
+    });
+    const typesByContentId = new Map<string, Set<ReactionType>>();
+    for (const reaction of reactions) {
+      const types = typesByContentId.get(reaction.contentId) ?? new Set<ReactionType>();
+      types.add(reaction.type);
+      typesByContentId.set(reaction.contentId, types);
+    }
+    return typesByContentId;
+  }
+
+  private contentWithReactionState(
+    content: PublicContent,
+    likeCounts: Map<string, number>,
+    viewerReactionTypes: Set<ReactionType> | undefined,
+  ): ContentWithReactionState {
+    return {
+      ...content,
+      likeCount: likeCounts.get(content.id) ?? 0,
+      liked: viewerReactionTypes?.has(ReactionType.LIKE) ?? false,
+      saved: viewerReactionTypes?.has(ReactionType.SAVE) ?? false,
     };
   }
 
@@ -112,7 +173,7 @@ export class ContentService {
       throw new BadRequestException('Content does not belong to user');
     }
 
-    return this.prismaService.content.update({
+    const content = await this.prismaService.content.update({
       where: {
         id,
       },
@@ -141,6 +202,7 @@ export class ContentService {
       },
       include: publicContentInclude,
     });
+    return (await this.withReactionState([content], userId))[0];
   }
 
   async remove(id: string, userId: string) {

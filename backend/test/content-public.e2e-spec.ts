@@ -22,7 +22,7 @@ describe('Public Content GraphQL HTTP', () => {
 
   const query = `query PublicContent($id: String!) {
     content(id: $id) {
-      id title description body type status publishedAt
+      id title description body type status publishedAt likeCount liked saved
       author { id username bio avatarUrl }
       category { id name }
       tags { id name }
@@ -111,6 +111,9 @@ describe('Public Content GraphQL HTTP', () => {
       category: { id: categoryId },
       tags: [{ id: tagId }],
       source: { id: sourceId },
+      likeCount: 1,
+      liked: false,
+      saved: false,
     });
     expect(JSON.stringify(response.body.data)).not.toContain(`${marker}@example.test`);
 
@@ -119,16 +122,10 @@ describe('Public Content GraphQL HTTP', () => {
       .send({
         query: `query {
           commentsByContent(contentId: "${publishedId}") { text user { id username } content { id title author { username } } }
-          reactionsByContent(contentId: "${publishedId}") { type user { id username } content { id title author { username } } }
-          reactionCounts(contentId: "${publishedId}")
         }`,
       });
     expect(interactions.body.errors).toBeUndefined();
     expect(interactions.body.data.commentsByContent[0].text).toBe('Public comment');
-    expect(interactions.body.data.reactionsByContent[0].content.id).toBe(publishedId);
-    const publicReactions = interactions.body.data.reactionsByContent as Array<{ type: string }>;
-    expect(publicReactions.map((reaction) => reaction.type)).toEqual(['LIKE']);
-    expect(JSON.parse(interactions.body.data.reactionCounts)).toEqual({ LIKE: 1, DISLIKE: 0 });
     expect(JSON.stringify(interactions.body.data)).not.toContain(`${marker}@example.test`);
   });
 
@@ -165,15 +162,9 @@ describe('Public Content GraphQL HTTP', () => {
     expect(comment.body.errors).toBeDefined();
     expect(JSON.stringify(comment.body)).not.toContain('Secret draft');
 
-    const reactions = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({ query: `query { reactionsByContent(contentId: "${draftId}") { id content { title } } }` });
-    expect(reactions.body.data.reactionsByContent).toEqual([]);
-
     const counts = await request(app.getHttpServer())
       .post('/graphql')
-      .send({ query: `query { reactionCounts(contentId: "${draftId}") viewCount(contentId: "${draftId}") }` });
-    expect(JSON.parse(counts.body.data.reactionCounts)).toEqual({ LIKE: 0, DISLIKE: 0 });
+      .send({ query: `query { viewCount(contentId: "${draftId}") }` });
     expect(counts.body.data.viewCount).toBe(0);
 
     const views = await request(app.getHttpServer())

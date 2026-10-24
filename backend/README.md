@@ -99,10 +99,8 @@ Handles hierarchical comments with support for nested replies:
 
 #### ReactionModule
 Manages user reactions to content:
-- `toggleReaction`: Add/remove reactions (LIKE, DISLIKE, SAVE)
-- `reactionsByContent`: Get reaction analytics for content
-- `reactionCounts`: Get aggregated reaction statistics
-- `hasUserReacted`: Check user's reaction status
+- `toggleContentReaction`: Add/remove Likes and Bookmarks on Published Content
+- `savedContents`: Get the current User's private Saved list
 
 #### TagModule
 Content tagging and discovery system:
@@ -136,9 +134,13 @@ query {
   }
 }
 
-# Get reaction counts
+# Get the current User's saved content
 query {
-  reactionCounts(contentId: "content-id")
+  savedContents(first: 12) {
+    items { id title likeCount liked saved }
+    endCursor
+    hasMore
+  }
 }
 
 # Get popular tags
@@ -153,9 +155,9 @@ query {
 
 **Example Mutations:**
 ```graphql
-# Toggle a reaction
+# Toggle a Like or Bookmark
 mutation {
-  toggleReaction(data: {
+  toggleContentReaction(data: {
     contentId: "content-id"
     type: LIKE
   })

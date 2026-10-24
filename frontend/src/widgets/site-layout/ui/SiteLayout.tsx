@@ -28,6 +28,9 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           >
             {account ? (
               <>
+                <Link to="/saved" className="text-hub-accent">
+                  Saved
+                </Link>
                 <Link to="/account" className="text-hub-accent">
                   {account.username}
                 </Link>

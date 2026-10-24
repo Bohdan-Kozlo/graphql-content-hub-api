@@ -24,7 +24,6 @@ enum Role {
 enum ReactionType {
   LIKE
   SAVE
-  DISLIKE
 }
 
 enum SubscriptionType {
