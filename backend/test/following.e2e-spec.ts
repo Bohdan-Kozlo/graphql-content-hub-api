@@ -124,4 +124,110 @@ describe('Author following (GraphQL HTTP)', () => {
     expect((await graphql(feed, { first: 2 }, token)).body.data.followingFeed.items).toEqual([]);
     expect((await graphql(subscriptions, undefined, token)).body.data.myFollowedAuthors).toEqual([]);
   });
+
+  it('combines author, category and source follows without duplicate stories', async () => {
+    const category = await prisma.category.create({ data: { name: `Topic ${marker}` } });
+    const source = await prisma.source.create({ data: { name: `Publisher ${marker}`, url: 'https://example.test' } });
+    try {
+      await prisma.content.createMany({
+        data: [
+          {
+            id: `${marker}-category`,
+            title: 'Category match',
+            description: 'Topic',
+            type: ContentType.ARTICLE,
+            status: ContentStatus.PUBLISHED,
+            publishedAt: new Date('2099-02-02'),
+            authorId: otherId,
+            categoryId: category.id,
+          },
+          {
+            id: `${marker}-source`,
+            title: 'Source match',
+            description: 'Publisher',
+            type: ContentType.ARTICLE,
+            status: ContentStatus.PUBLISHED,
+            publishedAt: new Date('2099-02-03'),
+            authorId: otherId,
+            sourceId: source.id,
+          },
+          {
+            id: `${marker}-overlap`,
+            title: 'Overlap match',
+            description: 'Both',
+            type: ContentType.ARTICLE,
+            status: ContentStatus.PUBLISHED,
+            publishedAt: new Date('2099-02-04'),
+            authorId,
+            categoryId: category.id,
+            sourceId: source.id,
+          },
+          {
+            id: `${marker}-category-draft`,
+            title: 'Hidden topic',
+            description: 'Draft',
+            type: ContentType.ARTICLE,
+            status: ContentStatus.DRAFT,
+            publishedAt: new Date('2099-02-05'),
+            authorId: otherId,
+            categoryId: category.id,
+          },
+        ],
+      });
+      const list = (await graphql('query { sources { id name } }')).body.data?.sources;
+      expect(list).toContainEqual({ id: source.id, name: source.name });
+      for (const kind of ['Category', 'Source'] as const) {
+        const id = kind === 'Category' ? category.id : source.id;
+        const followKind = `mutation($id: String!) { follow${kind}(id: $id) { id } }`;
+        expect((await graphql(followKind, { id: randomUUID() }, token)).body.errors).toBeDefined();
+        expect((await graphql(followKind, { id }, token)).body.data[`follow${kind}`].id).toBe(id);
+        expect((await graphql(followKind, { id }, token)).body.data[`follow${kind}`].id).toBe(id);
+        expect(
+          await prisma.subscription.count({
+            where: { userId: readerId, type: kind.toUpperCase() as 'CATEGORY' | 'SOURCE', targetId: id },
+          }),
+        ).toBe(1);
+        expect(
+          (await graphql(`query { myFollowed${kind === 'Category' ? 'Categories' : 'Sources'} { id } }`)).body.errors,
+        ).toBeDefined();
+        expect(
+          (
+            await graphql(
+              `query { myFollowed${kind === 'Category' ? 'Categories' : 'Sources'} { id } }`,
+              undefined,
+              otherToken,
+            )
+          ).body.data[`myFollowed${kind === 'Category' ? 'Categories' : 'Sources'}`],
+        ).toEqual([]);
+      }
+      await graphql(follow, { id: authorId }, token);
+      const titles: string[] = [];
+      let after: string | undefined;
+      for (let page = 0; page < 3; page++) {
+        const result = (await graphql(feed, { first: 2, after }, token)).body.data.followingFeed;
+        titles.push(...result.items.map((item: { title: string }) => item.title));
+        if (!result.hasMore) break;
+        after = result.endCursor;
+      }
+      expect(titles).toEqual(['Overlap match', 'Source match', 'Category match', 'New followed', 'Old followed']);
+      expect(
+        (await graphql('mutation($id: String!) { unfollowCategory(id: $id) }', { id: category.id }, token)).body.data
+          .unfollowCategory,
+      ).toBe(true);
+      expect(
+        (await graphql('mutation($id: String!) { unfollowSource(id: $id) }', { id: source.id }, token)).body.data
+          .unfollowSource,
+      ).toBe(true);
+      expect(
+        (await graphql(feed, { first: 10 }, token)).body.data.followingFeed.items.map(
+          (item: { title: string }) => item.title,
+        ),
+      ).toEqual(['Overlap match', 'New followed', 'Old followed']);
+    } finally {
+      await prisma.subscription.deleteMany({ where: { userId: readerId } });
+      await prisma.content.deleteMany({ where: { id: { startsWith: marker } } });
+      await prisma.source.delete({ where: { id: source.id } });
+      await prisma.category.delete({ where: { id: category.id } });
+    }
+  });
 });

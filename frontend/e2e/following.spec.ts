@@ -32,6 +32,8 @@ test('reader follows an author and finds published stories in Following', async 
       await route.fulfill({
         json: { data: { myFollowedAuthors: followed ? [author] : [] } },
       })
+    else if (query.includes('FollowingOptions'))
+      await route.fulfill({ json: { data: { categories: [], sources: [] } } })
     else if (query.includes('FollowAuthor')) {
       followed = true
       await route.fulfill({ json: { data: { followAuthor: author } } })
@@ -43,6 +45,8 @@ test('reader follows an author and finds published stories in Following', async 
         json: {
           data: {
             myFollowedAuthors: followed ? [author] : [],
+            myFollowedCategories: [],
+            myFollowedSources: [],
             followingFeed: {
               items:
                 followed && variables?.after
@@ -102,5 +106,7 @@ test('reader follows an author and finds published stories in Following', async 
   await page.getByRole('button', { name: 'Following · Unfollow' }).click()
   await expect(page.getByRole('button', { name: 'Follow author' })).toBeVisible()
   await page.getByRole('link', { name: 'Following', exact: true }).click()
-  await expect(page.getByText('You are not following any authors yet.')).toBeVisible()
+  await expect(
+    page.getByText('You are not following anyone or anything yet.'),
+  ).toBeVisible()
 })

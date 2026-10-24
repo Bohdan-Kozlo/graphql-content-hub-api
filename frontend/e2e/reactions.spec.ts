@@ -134,6 +134,11 @@ test('reader can react on the content page', async ({ page }) => {
     if (query.includes('CreateView')) {
       return route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
     }
+    if (query.includes('FollowedTopics')) {
+      return route.fulfill({
+        json: { data: { myFollowedCategories: [], myFollowedSources: [] } },
+      })
+    }
     if (query.includes('toggleContentReaction')) {
       const type = (variables?.data as { type?: string } | undefined)?.type
       state =

@@ -10,7 +10,6 @@ import { Role } from '../../../prisma/generated/client';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { IdArgs } from '../../common/dto/graphql-args';
 
-@UseGuards(AccessGuard)
 @Resolver()
 export class SourceResolver {
   constructor(private readonly sourceService: SourceService) {}
@@ -26,17 +25,19 @@ export class SourceResolver {
   }
 
   @Query(() => SourceModel)
+  @UseGuards(AccessGuard)
   createSource(@Args('data') data: CreateSourceInput) {
     return this.sourceService.create(data);
   }
 
   @Query(() => SourceModel)
+  @UseGuards(AccessGuard)
   updateSource(@Args() args: UpdateSourceArgs) {
     return this.sourceService.update(args.id, args.data);
   }
 
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(AccessGuard, RolesGuard)
   @Query(() => Boolean)
   deleteSource(@Args() args: IdArgs) {
     return this.sourceService.remove(args.id);

@@ -1,0 +1,10 @@
+query FollowingOptions {
+  categories {
+    id
+    name
+  }
+  sources {
+    id
+    name
+  }
+}

@@ -1,0 +1,27 @@
+query FollowedTopics {
+  myFollowedCategories {
+    id
+    name
+  }
+  myFollowedSources {
+    id
+    name
+  }
+}
+
+mutation FollowCategory($id: String!) {
+  followCategory(id: $id) {
+    id
+  }
+}
+mutation UnfollowCategory($id: String!) {
+  unfollowCategory(id: $id)
+}
+mutation FollowSource($id: String!) {
+  followSource(id: $id) {
+    id
+  }
+}
+mutation UnfollowSource($id: String!) {
+  unfollowSource(id: $id)
+}

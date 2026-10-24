@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import type { PublicContentQuery } from '@/shared/api/gql/graphql'
 import { externalUrl } from '@/shared/lib/url'
+import { TopicFollowButton } from '@/features/topic-follow'
 
 type Story = NonNullable<PublicContentQuery['content']>
 
@@ -24,6 +25,13 @@ export function StoryDetails({ content }: { content: Story }) {
           >
             {content.category.name}
           </Link>
+          <div className="mt-3">
+            <TopicFollowButton
+              kind="category"
+              id={content.category.id}
+              name={content.category.name}
+            />
+          </div>
         </div>
       )}
       {content.tags.length > 0 && (
@@ -57,6 +65,13 @@ export function StoryDetails({ content }: { content: Story }) {
           ) : (
             <p className="mt-1 font-semibold">{content.source.name}</p>
           )}
+          <div className="mt-3">
+            <TopicFollowButton
+              kind="source"
+              id={content.source.id}
+              name={content.source.name}
+            />
+          </div>
         </div>
       )}
     </aside>

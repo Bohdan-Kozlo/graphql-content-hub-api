@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@apollo/client/react'
 import { Link } from 'react-router'
 import { ViewCount } from '@/entities/content'
-import { FollowingFeedDocument } from '@/shared/api/gql/graphql'
+import { TopicFollowButton } from '@/features/topic-follow'
+import { FollowingFeedDocument, FollowingOptionsDocument } from '@/shared/api/gql/graphql'
 
 const PAGE_SIZE = 12
 
@@ -14,6 +15,7 @@ export default function FollowingPage() {
     fetchPolicy: 'network-only',
   })
   const feed = data?.followingFeed
+  const options = useQuery(FollowingOptionsDocument)
 
   async function loadMore() {
     if (!feed?.hasMore || !feed.endCursor || loadingMore) return
@@ -69,11 +71,76 @@ export default function FollowingPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
       <p className="text-xs font-bold tracking-[0.22em] text-hub-accent uppercase">
-        Your authors
+        Your interests
       </p>
       <h1 className="mt-4 font-hub-display text-5xl font-semibold tracking-tight sm:text-6xl">
         Following
       </h1>
+      <section
+        aria-label="Browse interests"
+        className="mt-10 rounded-2xl border border-hub-line bg-hub-surface p-5 sm:p-7"
+      >
+        <h2 className="font-hub-display text-2xl font-semibold">Browse interests</h2>
+        {options.loading && !options.data && (
+          <p role="status" className="mt-4 text-hub-muted">
+            Loading categories and sources…
+          </p>
+        )}
+        {options.error && (
+          <div className="mt-4">
+            <p role="alert">Unable to load categories and sources.</p>
+            <button
+              type="button"
+              onClick={() => void options.refetch()}
+              className="font-semibold text-hub-accent underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {options.data && (
+          <div className="mt-5 grid gap-6 sm:grid-cols-2">
+            <div>
+              <h3 className="mb-3 font-semibold">Categories</h3>
+              <ul className="space-y-3">
+                {options.data.categories.map((category) => (
+                  <li
+                    key={category.id}
+                    className="flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <span>{category.name}</span>
+                    <TopicFollowButton
+                      kind="category"
+                      id={category.id}
+                      name={category.name}
+                      onChange={() => void refetch()}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-3 font-semibold">Sources</h3>
+              <ul className="space-y-3">
+                {options.data.sources.map((source) => (
+                  <li
+                    key={source.id}
+                    className="flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <span>{source.name}</span>
+                    <TopicFollowButton
+                      kind="source"
+                      id={source.id}
+                      name={source.name}
+                      onChange={() => void refetch()}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </section>
       {error && data && (
         <div className="mt-8" role="alert">
           <p>Could not refresh Following. Showing the last loaded stories.</p>
@@ -86,9 +153,15 @@ export default function FollowingPage() {
           </button>
         </div>
       )}
-      {data?.myFollowedAuthors.length === 0 ? (
+      {data &&
+      data.myFollowedAuthors.length +
+        (data.myFollowedCategories?.length ?? 0) +
+        (data.myFollowedSources?.length ?? 0) ===
+        0 ? (
         <div className="mt-12 border-t border-hub-line pt-10">
-          <p className="text-lg text-hub-muted">You are not following any authors yet.</p>
+          <p className="text-lg text-hub-muted">
+            You are not following anyone or anything yet.
+          </p>
           <Link
             to="/"
             className="mt-5 inline-block font-semibold text-hub-accent underline underline-offset-4"
@@ -98,7 +171,7 @@ export default function FollowingPage() {
         </div>
       ) : items.length === 0 ? (
         <p className="mt-12 border-t border-hub-line pt-10 text-hub-muted">
-          No published stories from your followed authors yet.
+          No published stories from your follows yet.
         </p>
       ) : (
         <div className="mt-12 divide-y divide-hub-line border-t border-hub-line">

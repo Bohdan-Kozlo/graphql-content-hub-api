@@ -19,4 +19,12 @@ query FollowingFeed($first: Int!, $after: String) {
     id
     username
   }
+  myFollowedCategories {
+    id
+    name
+  }
+  myFollowedSources {
+    id
+    name
+  }
 }

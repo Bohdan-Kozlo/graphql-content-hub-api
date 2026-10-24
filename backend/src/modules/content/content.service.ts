@@ -73,9 +73,21 @@ export class ContentService {
     return this.findPublishedWhere(where, first, after, userId);
   }
 
-  async findPublishedByAuthors(authorIds: string[], first: number, after: string | undefined, userId: string) {
+  async findPublishedForFollowing(
+    targets: { authorIds: string[]; categoryIds: string[]; sourceIds: string[] },
+    first: number,
+    after: string | undefined,
+    userId: string,
+  ) {
     return this.findPublishedWhere(
-      { status: ContentStatus.PUBLISHED, authorId: { in: authorIds } },
+      {
+        status: ContentStatus.PUBLISHED,
+        OR: [
+          { authorId: { in: targets.authorIds } },
+          { categoryId: { in: targets.categoryIds } },
+          { sourceId: { in: targets.sourceIds } },
+        ],
+      },
       first,
       after,
       userId,

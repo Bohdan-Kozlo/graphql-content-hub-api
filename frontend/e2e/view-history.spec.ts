@@ -42,6 +42,11 @@ test('records an opened story once and shows it in the reader history', async ({
       viewRequests += 1
       return route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
     }
+    if (query.includes('FollowedTopics')) {
+      return route.fulfill({
+        json: { data: { myFollowedCategories: [], myFollowedSources: [] } },
+      })
+    }
     if (query.includes('ViewHistory')) {
       return route.fulfill({
         json: {
