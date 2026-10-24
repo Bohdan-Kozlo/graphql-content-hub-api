@@ -10,12 +10,6 @@ build/
 /.skratch/
 /.ua/
 /docs/*
-!/docs/agents/
-!/docs/frontend/
-/docs/agents/*
-!/docs/agents/frontend.md
-/docs/frontend/*
-!/docs/frontend/architecture.md
 /GLOSSARY.md
 /ARCHITECTURE.md
 
