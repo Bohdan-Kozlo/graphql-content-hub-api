@@ -5,6 +5,9 @@ build/
 
 **/prisma/generated/
 
+# Local credentials
+/backend/.env
+
 # Local planning; selected agent rules are versioned below
 /.scratch/
 /.skratch/

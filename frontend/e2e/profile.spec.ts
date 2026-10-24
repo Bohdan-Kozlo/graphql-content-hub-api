@@ -14,6 +14,7 @@ const story = {
   status: 'PUBLISHED',
   thumbnail: null,
   likeCount: 0,
+  viewCount: 12,
   liked: false,
   saved: false,
   publishedAt: '2026-01-15T12:00:00.000Z',
@@ -58,6 +59,9 @@ test('visitor follows an author to a public profile and its published stories', 
   await expect(page.getByText('Science writer')).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Read Mapping the Night Sky' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Published stories' }).getByText('12 views'),
   ).toBeVisible()
   await expect(page.getByText('reader@example.com')).toHaveCount(0)
 })

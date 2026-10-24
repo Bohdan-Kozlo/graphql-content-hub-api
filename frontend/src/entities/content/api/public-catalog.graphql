@@ -25,6 +25,7 @@ query PublicCatalog(
       thumbnail
       publishedAt
       likeCount
+      viewCount
       liked
       saved
       author {

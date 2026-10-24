@@ -18,6 +18,7 @@ const story = {
   author: { id: 'author-1', username: 'Author' },
   category: { name: 'Culture' },
   likeCount: 0,
+  viewCount: 7,
   liked: false,
   saved: false,
 }
@@ -115,6 +116,7 @@ test('reader can like and save a catalog story, then open Saved', async ({ page 
   await page.getByRole('link', { name: 'Saved' }).click()
   await expect(page.getByRole('heading', { name: 'Saved stories' })).toBeVisible()
   await expect(page.getByRole('heading', { name: story.title })).toBeVisible()
+  await expect(page.getByText('7 views')).toBeVisible()
 })
 
 test('reader can react on the content page', async ({ page }) => {

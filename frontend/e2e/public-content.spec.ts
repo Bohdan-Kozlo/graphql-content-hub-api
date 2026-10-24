@@ -12,6 +12,7 @@ const publicContent = {
   status: 'PUBLISHED',
   publishedAt: '2026-01-15T12:00:00.000Z',
   likeCount: 0,
+  viewCount: 0,
   liked: false,
   saved: false,
   author: {

@@ -9,6 +9,7 @@ query ViewHistory($first: Int!, $after: String) {
       thumbnail
       publishedAt
       likeCount
+      viewCount
       liked
       saved
       author {

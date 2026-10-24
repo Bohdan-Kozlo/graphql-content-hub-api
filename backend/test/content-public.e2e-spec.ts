@@ -24,7 +24,7 @@ describe('Public Content GraphQL HTTP', () => {
 
   const query = `query PublicContent($id: String!) {
     content(id: $id) {
-      id title description body type status publishedAt likeCount liked saved
+      id title description body type status publishedAt likeCount viewCount liked saved
       author { id username bio avatarUrl }
       category { id name }
       tags { id name }
@@ -117,6 +117,7 @@ describe('Public Content GraphQL HTTP', () => {
       tags: [{ id: tagId }],
       source: { id: sourceId },
       likeCount: 1,
+      viewCount: 0,
       liked: false,
       saved: false,
     });
@@ -242,16 +243,33 @@ describe('Public Content GraphQL HTTP', () => {
       .post('/graphql')
       .send({ query: `query { viewCount(contentId: "${publishedId}") }` });
     expect(countAfter.body.data.viewCount).toBe(countBefore.body.data.viewCount + 2);
+    const expectedViewCount = (countAfter.body.data as { viewCount: number }).viewCount;
+
+    const visibleCounts = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `query {
+          content(id: "${publishedId}") { id viewCount }
+          publishedContents(first: 10) { items { id viewCount } }
+        }`,
+      });
+    expect(visibleCounts.body.errors).toBeUndefined();
+    const visibleData = visibleCounts.body.data as {
+      content: { viewCount: number };
+      publishedContents: { items: Array<{ id: string; viewCount: number }> };
+    };
+    expect(visibleData.content.viewCount).toBe(expectedViewCount);
+    expect(visibleData.publishedContents.items).toContainEqual({ id: publishedId, viewCount: expectedViewCount });
 
     const history = await request(app.getHttpServer())
       .post('/graphql')
       .set('Authorization', `Bearer ${readerToken}`)
       .send({
-        query: 'query { myViewHistory(first: 20) { items { id title } endCursor hasMore } }',
+        query: 'query { myViewHistory(first: 20) { items { id title viewCount } endCursor hasMore } }',
       });
     expect(history.body.errors).toBeUndefined();
     expect(history.body.data.myViewHistory).toMatchObject({
-      items: [{ id: publishedId, title: 'A public story' }],
+      items: [{ id: publishedId, title: 'A public story', viewCount: expectedViewCount }],
       hasMore: false,
     });
 

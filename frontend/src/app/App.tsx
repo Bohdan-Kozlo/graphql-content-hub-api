@@ -23,6 +23,11 @@ const PublicContentPage = lazy(() =>
 const AccountPage = lazy(() =>
   import('@/pages/account-access').then(({ AccountPage }) => ({ default: AccountPage })),
 )
+const GoogleCompletionPage = lazy(() =>
+  import('@/pages/account-access').then(({ GoogleCompletionPage }) => ({
+    default: GoogleCompletionPage,
+  })),
+)
 const AccountHomePage = lazy(() =>
   import('@/pages/account').then(({ AccountHomePage }) => ({ default: AccountHomePage })),
 )
@@ -63,7 +68,13 @@ function ProtectedAccountRoute({
 
   if (!ready) return <p role="status">Restoring session…</p>
   if (!account) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+      />
+    )
   }
   return children
 }
@@ -140,6 +151,7 @@ export default function App() {
           />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/google/complete" element={<GoogleCompletionPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

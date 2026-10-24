@@ -14,4 +14,7 @@ export class Account {
 
   @Field(() => [Role])
   roles: Role[];
+
+  @Field()
+  hasPassword: boolean;
 }

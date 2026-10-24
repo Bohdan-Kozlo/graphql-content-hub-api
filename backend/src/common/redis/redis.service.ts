@@ -26,6 +26,14 @@ export class RedisService implements OnModuleDestroy {
     await this.redis.del(`refresh:${userId}`);
   }
 
+  async createOAuthState(state: string, returnTo: string): Promise<void> {
+    await this.redis.set(`oauth:google:${state}`, returnTo, 'EX', 600);
+  }
+
+  async consumeOAuthState(state: string): Promise<string | null> {
+    return this.redis.getdel(`oauth:google:${state}`);
+  }
+
   async rotateRefreshToken(userId: string, oldToken: string, newToken: string): Promise<boolean> {
     const rotated = await this.redis.eval(
       "if redis.call('GET', KEYS[1]) == ARGV[1] then redis.call('SET', KEYS[1], ARGV[2], 'EX', ARGV[3]); return 1 else return 0 end",

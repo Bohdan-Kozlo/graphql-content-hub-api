@@ -7,6 +7,7 @@ type Account {
   email: String!
   username: String!
   roles: [Role!]!
+  hasPassword: Boolean!
 }
 
 enum Role {
@@ -64,6 +65,7 @@ type ContentModel {
   category: CategoryModel
   tags: [TagModel!]!
   likeCount: Int!
+  viewCount: Int!
   liked: Boolean!
   saved: Boolean!
 }
@@ -177,6 +179,7 @@ input UpdateSourceInput {
 type Mutation {
   requestPasswordReset(email: String!): Boolean!
   resetPassword(token: String!, password: String!): Boolean!
+  setFirstPassword(password: String!): Boolean!
   login(data: LoginInput!): AuthResponse!
   signup(data: SignupInput!): AuthResponse!
   logout: Boolean!

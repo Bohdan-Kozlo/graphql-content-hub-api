@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@apollo/client/react'
 import { Link } from 'react-router'
+import { ViewCount } from '@/entities/content'
 import { ViewHistoryDocument } from '@/shared/api/gql/graphql'
 
 const PAGE_SIZE = 20
@@ -95,6 +96,9 @@ export default function HistoryPage() {
                 </Link>
               </h2>
               <p className="mt-3 max-w-2xl text-hub-muted">{item.description}</p>
+              <p className="mt-3 text-sm text-hub-muted">
+                <ViewCount count={item.viewCount} />
+              </p>
             </article>
           ))}
         </div>

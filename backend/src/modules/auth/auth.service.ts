@@ -8,6 +8,7 @@ import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -16,11 +17,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async validateUser(email: string, password: string) {
     const user = await this.userService.findByEmail(email.trim().toLowerCase());
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (user?.password && (await bcrypt.compare(password, user.password))) {
       return user;
     }
     throw new BadRequestException('Invalid credentials');
@@ -36,7 +38,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      account: { id: user.id, email: user.email, username: user.username, roles: user.role },
+      account: { id: user.id, email: user.email, username: user.username, roles: user.role, hasPassword: true },
     };
   }
 
@@ -62,12 +64,29 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      account: { id: user.id, email: user.email, username: user.username, roles: user.role },
+      account: { id: user.id, email: user.email, username: user.username, roles: user.role, hasPassword: true },
     };
   }
 
   async logout(userId: string) {
     await this.redisService.deleteRefreshToken(userId);
+    return true;
+  }
+
+  async loginUser(userId: string) {
+    const user = await this.userService.findOne(userId);
+    const { refreshToken } = await this.generateTokens(user.id, user.role, user.authVersion);
+    await this.redisService.setRefreshToken(user.id, refreshToken);
+    return refreshToken;
+  }
+
+  async setFirstPassword(userId: string, password: string): Promise<boolean> {
+    const hash = await bcrypt.hash(password, 10);
+    const updated = await this.prisma.user.updateMany({
+      where: { id: userId, password: null },
+      data: { password: hash },
+    });
+    if (updated.count !== 1) throw new BadRequestException('Password already set');
     return true;
   }
 
@@ -91,7 +110,13 @@ export class AuthService {
     return {
       accessToken,
       refreshToken: newRefreshToken,
-      account: { id: user.id, email: user.email, username: user.username, roles: user.role },
+      account: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        roles: user.role,
+        hasPassword: Boolean(user.password),
+      },
     };
   }
 

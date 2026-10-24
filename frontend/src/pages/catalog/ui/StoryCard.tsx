@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { ContentReactionControls } from '@/features/content-reaction'
+import { ViewCount } from '@/entities/content'
 import { publishedDate } from '@/shared/lib/date'
 import { externalUrl } from '@/shared/lib/url'
 import { contentTypeNames } from '../model/catalog-filters'
@@ -13,6 +14,7 @@ export type CatalogItem = {
   thumbnail?: string | null
   publishedAt?: string | null
   likeCount: number
+  viewCount: number
   liked: boolean
   saved: boolean
   author: { id: string; username: string }
@@ -110,6 +112,9 @@ export function StoryCard({
       >
         {item.author.username}
       </Link>
+      <p className="mt-2 text-sm text-hub-muted">
+        <ViewCount count={item.viewCount} />
+      </p>
       <div className="mt-4">
         <ContentReactionControls content={item} />
       </div>

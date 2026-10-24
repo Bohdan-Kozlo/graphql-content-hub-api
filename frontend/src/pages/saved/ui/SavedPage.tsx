@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@apollo/client/react'
 import { Link } from 'react-router'
 import { ContentReactionControls } from '@/features/content-reaction'
+import { ViewCount } from '@/entities/content'
 import { SavedContentsDocument } from '@/shared/api/gql/graphql'
 
 const PAGE_SIZE = 12
@@ -104,6 +105,9 @@ export default function SavedPage() {
                 </Link>
               </h2>
               <p className="mt-3 max-w-2xl text-hub-muted">{item.description}</p>
+              <p className="mt-3 text-sm text-hub-muted">
+                <ViewCount count={item.viewCount} />
+              </p>
               <div className="mt-5">
                 <ContentReactionControls
                   content={item}

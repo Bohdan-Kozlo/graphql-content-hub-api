@@ -31,6 +31,7 @@ const catalogItems = [
   publishedAt: '2026-01-15T12:00:00.000Z',
   thumbnail: null,
   likeCount: 0,
+  viewCount: 12,
   liked: false,
   saved: false,
   author: { id: 'author-1', username: 'Alex Writer' },
@@ -39,6 +40,7 @@ const catalogItems = [
 
 test('loads all four types in pages and opens a story', async ({ page }) => {
   const cursors: Array<string | null> = []
+  let recordedViews = 0
   await page.route('**/graphql', async (route) => {
     const body = route.request().postDataJSON() as {
       operationName?: string
@@ -73,6 +75,7 @@ test('loads all four types in pages and opens a story', async ({ page }) => {
           data: {
             content: {
               ...catalogItems[2],
+              viewCount: 12 + recordedViews,
               status: 'PUBLISHED',
               body: 'Listen to a thoughtful conversation.',
               mediaUrl: null,
@@ -89,11 +92,19 @@ test('loads all four types in pages and opens a story', async ({ page }) => {
           },
         },
       })
+      return
+    }
+    if (body.operationName === 'CreateView') {
+      recordedViews += 1
+      await route.fulfill({ json: { data: { createView: { id: 'view-1' } } } })
     }
   })
 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Fresh Ideas' })).toBeVisible()
+  await expect(
+    page.getByRole('article').filter({ hasText: 'Fresh Ideas' }).getByText('12 views'),
+  ).toBeVisible()
   await expect(page.getByRole('heading', { name: 'City in Motion' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'The Listening Room' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Load more' }).click()
@@ -106,6 +117,7 @@ test('loads all four types in pages and opens a story', async ({ page }) => {
   await page.getByRole('link', { name: /The Listening Room/ }).click()
   await expect(page).toHaveURL(/\/content\/podcast-1$/)
   await expect(page.getByText('Listen to a thoughtful conversation.')).toBeVisible()
+  await expect(page.getByText('13 views')).toBeVisible()
 })
 
 test('shows an empty catalog when there are no published items', async ({ page }) => {

@@ -35,7 +35,7 @@ enum SubscriptionType {
 model User {
   id             String         @id @default(uuid())
   email          String         @unique
-  password       String
+  password       String?
   passwordResetTokenHash String? @unique
   passwordResetExpiresAt DateTime?
   authVersion    Int            @default(0)
@@ -54,6 +54,19 @@ model User {
   views          View[]
   readingHistory  ReadingHistory[]
   notifications  Notification[]
+  providerIdentities ProviderIdentity[]
+}
+
+model ProviderIdentity {
+  id        String   @id @default(uuid())
+  provider  String
+  subject   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([provider, subject])
+  @@unique([provider, userId])
 }
 
 model Profile {

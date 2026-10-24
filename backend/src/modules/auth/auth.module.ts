@@ -8,6 +8,9 @@ import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { PasswordRecoveryService } from './password-recovery.service';
 import { PasswordRecoveryMailer } from './password-recovery.mailer';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleIdentityService } from './google-identity.service';
+import { GoogleAuthController } from './google-auth.controller';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { PasswordRecoveryMailer } from './password-recovery.mailer';
     RefreshTokenStrategy,
     PasswordRecoveryService,
     PasswordRecoveryMailer,
+    GoogleStrategy,
+    GoogleIdentityService,
   ],
+  controllers: [GoogleAuthController],
 })
 export class AuthModule {}

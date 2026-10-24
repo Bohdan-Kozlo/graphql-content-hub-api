@@ -15,7 +15,12 @@ type CatalogFilters = {
 };
 
 type PublicContent = Prisma.ContentGetPayload<{ include: typeof publicContentInclude }>;
-type ContentWithReactionState = PublicContent & { likeCount: number; liked: boolean; saved: boolean };
+type ContentWithEngagementState = PublicContent & {
+  likeCount: number;
+  viewCount: number;
+  liked: boolean;
+  saved: boolean;
+};
 
 @Injectable()
 export class ContentService {
@@ -47,10 +52,10 @@ export class ContentService {
       },
       include: publicContentInclude,
     });
-    return (await this.withReactionState([content], userId))[0];
+    return (await this.withEngagementState([content], userId))[0];
   }
 
-  async findPublishedById(id: string, userId: string | null = null): Promise<ContentWithReactionState | null> {
+  async findPublishedById(id: string, userId: string | null = null): Promise<ContentWithEngagementState | null> {
     const content = await this.prismaService.content.findFirst({
       where: {
         id,
@@ -59,7 +64,7 @@ export class ContentService {
       include: publicContentInclude,
     });
     if (!content) return null;
-    return (await this.withReactionState([content], userId))[0];
+    return (await this.withEngagementState([content], userId))[0];
   }
 
   async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}, userId: string | null = null) {
@@ -81,7 +86,7 @@ export class ContentService {
       skip: after ? 1 : undefined,
       include: publicContentInclude,
     });
-    const items = await this.withReactionState(contents.slice(0, first), userId);
+    const items = await this.withEngagementState(contents.slice(0, first), userId);
 
     return {
       items,
@@ -90,18 +95,25 @@ export class ContentService {
     };
   }
 
-  async withReactionState(contents: PublicContent[], userId: string | null): Promise<ContentWithReactionState[]> {
+  async withEngagementState(contents: PublicContent[], userId: string | null): Promise<ContentWithEngagementState[]> {
     if (contents.length === 0) return [];
 
     const contentIds = contents.map(({ id }) => id);
-    const [likeCounts, viewerReactionTypes] = await Promise.all([
+    const [likeCounts, viewCounts, viewerReactionTypes] = await Promise.all([
       this.likeCountsByContentId(contentIds),
+      this.viewCountsByContentId(contentIds),
       this.viewerReactionTypesByContentId(contentIds, userId),
     ]);
 
     return contents.map((content) =>
-      this.contentWithReactionState(content, likeCounts, viewerReactionTypes.get(content.id)),
+      this.contentWithEngagementState(content, likeCounts, viewCounts, viewerReactionTypes.get(content.id)),
     );
+  }
+
+  async getPublishedViewCount(contentId: string): Promise<number> {
+    return this.prismaService.view.count({
+      where: { contentId, content: { is: { status: ContentStatus.PUBLISHED } } },
+    });
   }
 
   private publishedContentWhere(filters: CatalogFilters): Prisma.ContentWhereInput {
@@ -132,6 +144,15 @@ export class ContentService {
     return new Map(counts.map((count) => [count.contentId, count._count._all]));
   }
 
+  private async viewCountsByContentId(contentIds: string[]) {
+    const counts = await this.prismaService.view.groupBy({
+      by: ['contentId'],
+      where: { contentId: { in: contentIds }, content: { is: { status: ContentStatus.PUBLISHED } } },
+      _count: { _all: true },
+    });
+    return new Map(counts.map((count) => [count.contentId, count._count._all]));
+  }
+
   private async viewerReactionTypesByContentId(contentIds: string[], userId: string | null) {
     if (!userId) return new Map<string, Set<ReactionType>>();
 
@@ -148,14 +169,16 @@ export class ContentService {
     return typesByContentId;
   }
 
-  private contentWithReactionState(
+  private contentWithEngagementState(
     content: PublicContent,
     likeCounts: Map<string, number>,
+    viewCounts: Map<string, number>,
     viewerReactionTypes: Set<ReactionType> | undefined,
-  ): ContentWithReactionState {
+  ): ContentWithEngagementState {
     return {
       ...content,
       likeCount: likeCounts.get(content.id) ?? 0,
+      viewCount: viewCounts.get(content.id) ?? 0,
       liked: viewerReactionTypes?.has(ReactionType.LIKE) ?? false,
       saved: viewerReactionTypes?.has(ReactionType.SAVE) ?? false,
     };
@@ -202,7 +225,7 @@ export class ContentService {
       },
       include: publicContentInclude,
     });
-    return (await this.withReactionState([content], userId))[0];
+    return (await this.withEngagementState([content], userId))[0];
   }
 
   async remove(id: string, userId: string) {

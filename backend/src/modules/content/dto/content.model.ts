@@ -55,6 +55,9 @@ export class ContentModel {
   @Field(() => Int)
   likeCount: number;
 
+  @Field(() => Int)
+  viewCount: number;
+
   @Field()
   liked: boolean;
 

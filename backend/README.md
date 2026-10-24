@@ -4,7 +4,7 @@ A customizable content delivery platform built with **NestJS**, **GraphQL**, and
 
 ---
 
-## 🚀 Features
+## Features
 
 - **User Accounts**
   - Registration, login, and profile management
@@ -41,7 +41,7 @@ A customizable content delivery platform built with **NestJS**, **GraphQL**, and
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: [NestJS](https://nestjs.com/)
 - **GraphQL**: Apollo Server (code-first approach)
@@ -50,7 +50,7 @@ A customizable content delivery platform built with **NestJS**, **GraphQL**, and
 - **Deployment**: Docker-ready
 
 ---
-## 📦 Local setup
+## Local setup
 
 Run these commands from `backend/`. Use Node.js 24.15 or later and Docker. Copy `.env.example` to `.env` and replace the JWT secrets before starting the API.
 
@@ -176,3 +176,18 @@ mutation {
   }
 }
 ```
+# Google sign-in configuration
+
+Google sign-in uses a Google Cloud OAuth 2.0 **Web application** client. Configure
+the consent screen for the intended users, then register the frontend origin as
+an authorized JavaScript origin and the callback URL as an authorized redirect
+URI. For local development with the Vite proxy, use the same host consistently
+(for example `http://127.0.0.1:5173` as the origin and
+`http://127.0.0.1:5173/auth/google/callback` as the redirect URI). Production
+serves the frontend, `/auth/google`, and `/graphql` on one HTTPS origin.
+
+Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_CALLBACK_URL` in the
+backend environment. Keep the secret out of source control. Without these
+settings, the existing email/password flow stays available and the Google
+action returns an unavailable message. Google is requested only for `profile`
+and `email`; the application does not store provider access or refresh tokens.

@@ -8,4 +8,5 @@ export {
   signUp,
   subscribeSession,
   updateSessionUsername,
+  updateSessionHasPassword,
 } from './model/session'

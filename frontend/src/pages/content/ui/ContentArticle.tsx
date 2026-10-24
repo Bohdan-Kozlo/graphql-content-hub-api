@@ -4,6 +4,7 @@ import { Avatar } from '@/shared/ui/avatar'
 import PublicMedia from './PublicMedia'
 import { StoryDetails } from './StoryDetails'
 import { ContentReactionControls } from '@/features/content-reaction'
+import { ViewCount } from '@/entities/content'
 
 type Story = NonNullable<PublicContentQuery['content']>
 
@@ -54,8 +55,11 @@ export function ContentArticle({ content }: { content: Story }) {
           <p className="mt-6 max-w-2xl text-lg leading-8 text-hub-muted sm:text-xl">
             {content.description}
           </p>
-          <div className="mt-7">
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
             <ContentReactionControls content={content} />
+            <span className="text-sm text-hub-muted">
+              <ViewCount count={content.viewCount} />
+            </span>
           </div>
 
           <div className="mt-9 flex items-center gap-3 border-t border-hub-line pt-6">

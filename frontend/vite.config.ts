@@ -11,7 +11,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/graphql': 'http://127.0.0.1:3000',
+      '/graphql': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: false,
+      },
+      '^/auth/google(?:/callback)?(?:\\?|$)': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: false,
+      },
     },
   },
 })

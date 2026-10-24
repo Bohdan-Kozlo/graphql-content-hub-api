@@ -1,4 +1,4 @@
-import { Resolver, Args, Query, Mutation } from '@nestjs/graphql';
+import { Resolver, Args, Query, Mutation, ResolveField, Parent, Int } from '@nestjs/graphql';
 import { ContentService } from './content.service';
 import { ContentModel } from './dto/content.model';
 import { CreateContentInput } from './dto/create-content.input';
@@ -10,10 +10,17 @@ import { UpdateContentArgs } from './dto/update-content.args';
 import { ContentPageModel } from './dto/content-page.model';
 import { IdArgs } from '../../common/dto/graphql-args';
 import { PublishedContentsArgs } from './dto/published-contents.args';
+import { ContentStatus } from '../../../prisma/generated/client';
 
-@Resolver()
+@Resolver(() => ContentModel)
 export class ContentResolver {
   constructor(private readonly contentService: ContentService) {}
+
+  @ResolveField(() => Int)
+  viewCount(@Parent() content: { id: string; status: ContentStatus; viewCount?: number }) {
+    if (content.status !== ContentStatus.PUBLISHED) return 0;
+    return content.viewCount ?? this.contentService.getPublishedViewCount(content.id);
+  }
 
   @Query(() => ContentModel, { nullable: true })
   @UseGuards(OptionalAccessGuard)

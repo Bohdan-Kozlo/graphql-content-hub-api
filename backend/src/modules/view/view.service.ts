@@ -101,7 +101,7 @@ export class ViewService {
       skip: after ? 1 : undefined,
       include: { content: { include: publicContentInclude } },
     });
-    const items = await this.contentService.withReactionState(
+    const items = await this.contentService.withEngagementState(
       history.slice(0, first).map(({ content }) => content),
       userId,
     );
@@ -113,9 +113,7 @@ export class ViewService {
   }
 
   async getViewCount(contentId: string) {
-    return this.prismaService.view.count({
-      where: { contentId, content: { is: { status: ContentStatus.PUBLISHED } } },
-    });
+    return this.contentService.getPublishedViewCount(contentId);
   }
 
   async getUniqueViewCount(contentId: string) {

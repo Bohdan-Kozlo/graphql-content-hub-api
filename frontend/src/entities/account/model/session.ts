@@ -7,7 +7,13 @@ import {
   SignupDocument,
 } from '@/shared/api/gql/graphql'
 
-type Account = { id: string; email: string; username: string; roles: string[] }
+type Account = {
+  id: string
+  email: string
+  username: string
+  roles: string[]
+  hasPassword: boolean
+}
 
 let accessToken: string | null = null
 let currentAccount: Account | null = null
@@ -25,6 +31,10 @@ export function getAccount() {
 
 export function updateSessionUsername(username: string) {
   if (currentAccount) publish(accessToken, { ...currentAccount, username })
+}
+
+export function updateSessionHasPassword() {
+  if (currentAccount) publish(accessToken, { ...currentAccount, hasPassword: true })
 }
 
 export function subscribeSession(listener: () => void) {

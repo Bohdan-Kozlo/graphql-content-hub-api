@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { getAccount, subscribeSession, updateSessionUsername } from '@/entities/account'
 import { PublicProfileDocument, UpdateProfileDocument } from '@/shared/api/gql/graphql'
+import { SetFirstPasswordForm } from './SetFirstPasswordForm'
 import { profileSchema } from '../model/profile-schema'
 import type { ProfileFormValues } from '../model/profile-schema'
 
@@ -16,6 +17,7 @@ export function AccountHomePage() {
   })
   const [updateProfile] = useMutation(UpdateProfileDocument)
   const [message, setMessage] = useState('')
+  const [passwordNotice, setPasswordNotice] = useState('')
   const {
     register,
     reset,
@@ -152,6 +154,18 @@ export function AccountHomePage() {
           </button>
         </form>
       </div>
+      {passwordNotice && (
+        <p role="status" className="mt-8">
+          {passwordNotice}
+        </p>
+      )}
+      {!account.hasPassword && (
+        <SetFirstPasswordForm
+          onSuccess={() =>
+            setPasswordNotice('Password set. You can now sign in with email.')
+          }
+        />
+      )}
     </section>
   )
 }

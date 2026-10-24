@@ -1,12 +1,22 @@
 import { useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { getAccount, subscribeSession } from '@/entities/account'
 import { SignOutButton } from './SignOutButton'
 import { ThemeToggle } from './ThemeToggle'
 
 export function SiteLayout({ children }: { children: ReactNode }) {
   const account = useSyncExternalStore(subscribeSession, getAccount)
+  const location = useLocation()
+  const returnTo = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/auth/google/complete',
+  ].includes(location.pathname)
+    ? '/account'
+    : `${location.pathname}${location.search}${location.hash}`
 
   return (
     <div className="min-h-screen bg-hub-page text-hub-ink">
@@ -41,11 +51,12 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="text-hub-accent">
+                <Link to="/login" state={{ from: returnTo }} className="text-hub-accent">
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
+                  state={{ from: returnTo }}
                   className="hidden text-hub-muted hover:text-hub-ink sm:inline"
                 >
                   Join

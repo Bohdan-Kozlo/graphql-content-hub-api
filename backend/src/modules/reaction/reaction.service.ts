@@ -67,7 +67,7 @@ export class ReactionService {
       skip: after ? 1 : undefined,
       include: { content: { include: publicContentInclude } },
     });
-    const items = await this.contentService.withReactionState(
+    const items = await this.contentService.withEngagementState(
       reactions.slice(0, first).map(({ content }) => content),
       userId,
     );

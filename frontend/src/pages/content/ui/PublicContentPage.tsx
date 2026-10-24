@@ -9,7 +9,7 @@ export default function PublicContentPage() {
   const { id } = useParams<'id'>()
   const viewRequest = useRef<{ contentId: string; requestId: string } | null>(null)
   const [createView] = useMutation(CreateViewDocument)
-  const { data, loading, error } = useQuery(PublicContentDocument, {
+  const { data, loading, error, refetch } = useQuery(PublicContentDocument, {
     variables: { id: id ?? '' },
     skip: !id,
     fetchPolicy: 'network-only',
@@ -21,19 +21,19 @@ export default function PublicContentPage() {
     if (viewRequest.current?.contentId === content.id) return
     const requestId = crypto.randomUUID()
     viewRequest.current = { contentId: content.id, requestId }
-    void createView({ variables: { data: { contentId: content.id, requestId } } }).catch(
-      () => undefined,
-    )
-  }, [content, createView])
+    void createView({ variables: { data: { contentId: content.id, requestId } } })
+      .then(() => refetch())
+      .catch(() => undefined)
+  }, [content, createView, refetch])
 
-  if (loading) {
+  if (loading && !content) {
     return (
       <p className="mx-auto max-w-6xl px-5 py-24 text-hub-muted" role="status">
         Loading story…
       </p>
     )
   }
-  if (error) {
+  if (error && !content) {
     return (
       <StatusMessage
         title="Unable to load content"

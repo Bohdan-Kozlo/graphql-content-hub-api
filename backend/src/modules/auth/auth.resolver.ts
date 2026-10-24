@@ -14,6 +14,7 @@ import { AccessGuard } from '../../common/guards/access.guard';
 import { RefreshGuard } from '../../common/guards/refresh.guard';
 import { PasswordRecoveryService } from './password-recovery.service';
 import { RequestPasswordResetArgs, ResetPasswordArgs } from './dto/reset-password.args';
+import { SetFirstPasswordArgs } from './dto/set-first-password.args';
 
 @Resolver()
 export class AuthResolver {
@@ -41,10 +42,27 @@ export class AuthResolver {
   }
 
   @UseGuards(AccessGuard)
+  @Mutation(() => Boolean)
+  async setFirstPassword(
+    @CurrentUser() userId: string,
+    @Args() args: SetFirstPasswordArgs,
+    @Context() context: { req: Request },
+  ): Promise<boolean> {
+    this.checkOrigin(context.req);
+    return this.authService.setFirstPassword(userId, args.password);
+  }
+
+  @UseGuards(AccessGuard)
   @Query(() => Account)
   async me(@CurrentUser() userId: string) {
     const user = await this.userService.findOne(userId);
-    return { id: user.id, email: user.email, username: user.username, roles: user.role };
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      roles: user.role,
+      hasPassword: Boolean(user.password),
+    };
   }
 
   @Mutation(() => AuthResponse)

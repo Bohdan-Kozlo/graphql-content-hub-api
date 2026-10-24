@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useQuery } from '@apollo/client/react'
 import { Link, useParams } from 'react-router'
 import { getAccount, subscribeSession } from '@/entities/account'
-import { usePublishedContents } from '@/entities/content'
+import { usePublishedContents, ViewCount } from '@/entities/content'
 import { PublicProfileDocument } from '@/shared/api/gql/graphql'
 import { Avatar } from '@/shared/ui/avatar'
 
@@ -115,6 +115,9 @@ export default function PublicProfilePage() {
                 </Link>
                 <p className="mt-2 line-clamp-2 text-sm text-hub-muted">
                   {item.description}
+                </p>
+                <p className="mt-3 text-sm text-hub-muted">
+                  <ViewCount count={item.viewCount} />
                 </p>
               </article>
             ))}
