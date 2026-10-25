@@ -5,6 +5,7 @@ import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
 import { ContentStatus, ContentType, Prisma, ReactionType } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
+import { validateArticleBody } from './article-body';
 
 type CatalogFilters = {
   search?: string;
@@ -30,6 +31,10 @@ export class ContentService {
   ) {}
 
   async create(data: CreateContentInput, userId: string) {
+    if (data.type === ContentType.ARTICLE) {
+      if (!data.categoryId) throw new BadRequestException('Article category is required');
+      validateArticleBody(data.body);
+    }
     const user = await this.userService.findOne(userId);
     if (!user) {
       throw new BadRequestException('User not found');
@@ -65,6 +70,23 @@ export class ContentService {
     });
     if (!content) return null;
     return (await this.withEngagementState([content], userId))[0];
+  }
+
+  async findOwnDrafts(userId: string) {
+    const contents = await this.prismaService.content.findMany({
+      where: { authorId: userId, status: ContentStatus.DRAFT },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      include: publicContentInclude,
+    });
+    return this.withEngagementState(contents, userId);
+  }
+
+  async findOwnDraft(id: string, userId: string) {
+    const content = await this.prismaService.content.findFirst({
+      where: { id, authorId: userId, status: ContentStatus.DRAFT },
+      include: publicContentInclude,
+    });
+    return content ? (await this.withEngagementState([content], userId))[0] : null;
   }
 
   async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}, userId: string | null = null) {
@@ -225,6 +247,16 @@ export class ContentService {
     if (!contentBelongsToUser) {
       throw new BadRequestException('Content does not belong to user');
     }
+    if (
+      data.type === ContentType.ARTICLE ||
+      (contentBelongsToUser.type === ContentType.ARTICLE && data.body !== undefined)
+    )
+      validateArticleBody(data.body ?? contentBelongsToUser.body ?? undefined);
+    if (
+      (data.type ?? contentBelongsToUser.type) === ContentType.ARTICLE &&
+      !(data.categoryId ?? contentBelongsToUser.categoryId)
+    )
+      throw new BadRequestException('Article category is required');
 
     const content = await this.prismaService.content.update({
       where: {

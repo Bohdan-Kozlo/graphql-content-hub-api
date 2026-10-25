@@ -142,6 +142,8 @@ type Query {
   comment(id: String!): CommentModel!
   content(id: String!): ContentModel
   publishedContents(first: Int! = 12, after: String, search: String, type: ContentType, categoryId: String, tagId: String, authorId: String): ContentPageModel!
+  myDrafts: [ContentModel!]!
+  myDraft(id: String!): ContentModel
   categories: [CategoryModel!]!
   category(id: String!): CategoryModel!
   tags: [TagModel!]!

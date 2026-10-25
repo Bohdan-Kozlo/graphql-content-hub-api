@@ -38,6 +38,11 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           >
             {account ? (
               <>
+                {account.roles.some((role) => role === 'EDITOR' || role === 'ADMIN') && (
+                  <Link to="/editor" className="text-hub-accent">
+                    Editor
+                  </Link>
+                )}
                 <Link to="/following" className="text-hub-accent">
                   Following
                 </Link>

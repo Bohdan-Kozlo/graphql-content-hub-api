@@ -4,7 +4,7 @@ import { Avatar } from '@/shared/ui/avatar'
 import PublicMedia from './PublicMedia'
 import { StoryDetails } from './StoryDetails'
 import { ContentReactionControls } from '@/features/content-reaction'
-import { ViewCount } from '@/entities/content'
+import { ArticleBody, ViewCount } from '@/entities/content'
 
 type Story = NonNullable<PublicContentQuery['content']>
 
@@ -16,11 +16,6 @@ export function ContentArticle({ content }: { content: Story }) {
         day: 'numeric',
       }).format(new Date(content.publishedAt))
     : null
-  const paragraphs =
-    content.body
-      ?.split(/\n\s*\n|\n/)
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean) ?? []
 
   return (
     <article className="mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-16">
@@ -87,15 +82,7 @@ export function ContentArticle({ content }: { content: Story }) {
           />
 
           <div className="mt-12 space-y-6 text-[1.05rem] leading-8 sm:text-lg">
-            {paragraphs.length > 0 ? (
-              paragraphs.map((paragraph, index) => (
-                <p key={index} className="whitespace-pre-wrap">
-                  {paragraph}
-                </p>
-              ))
-            ) : (
-              <p className="text-hub-muted">No text is available for this story.</p>
-            )}
+            <ArticleBody body={content.body} />
           </div>
         </div>
 

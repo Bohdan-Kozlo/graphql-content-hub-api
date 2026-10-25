@@ -17,6 +17,8 @@
   "dependencies": {
     "@apollo/client": "^4.3.4",
     "@hookform/resolvers": "^5.9.2",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
     "graphql": "^16.14.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

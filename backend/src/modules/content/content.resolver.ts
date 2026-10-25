@@ -10,7 +10,9 @@ import { UpdateContentArgs } from './dto/update-content.args';
 import { ContentPageModel } from './dto/content-page.model';
 import { IdArgs } from '../../common/dto/graphql-args';
 import { PublishedContentsArgs } from './dto/published-contents.args';
-import { ContentStatus } from '../../../prisma/generated/client';
+import { ContentStatus, Role } from '../../../prisma/generated/client';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/reles.decorator';
 
 @Resolver(() => ContentModel)
 export class ContentResolver {
@@ -34,19 +36,36 @@ export class ContentResolver {
     return this.contentService.findPublishedPage(args.first, args.after, args, userId);
   }
 
-  @UseGuards(AccessGuard)
+  @Query(() => [ContentModel])
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
+  myDrafts(@CurrentUser() userId: string) {
+    return this.contentService.findOwnDrafts(userId);
+  }
+
+  @Query(() => ContentModel, { nullable: true })
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
+  myDraft(@Args() args: IdArgs, @CurrentUser() userId: string) {
+    return this.contentService.findOwnDraft(args.id, userId);
+  }
+
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
   @Mutation(() => ContentModel)
   async createContent(@Args('data') data: CreateContentInput, @CurrentUser() userId: string) {
     return await this.contentService.create(data, userId);
   }
 
-  @UseGuards(AccessGuard)
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
   @Mutation(() => ContentModel)
   async updateContent(@Args() args: UpdateContentArgs, @CurrentUser() userId: string) {
     return await this.contentService.update(args.id, args.data, userId);
   }
 
-  @UseGuards(AccessGuard)
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
   @Mutation(() => Boolean)
   async removeContent(@Args() args: IdArgs, @CurrentUser() userId: string) {
     return await this.contentService.remove(args.id, userId);

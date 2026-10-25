@@ -1,0 +1,47 @@
+query MyDrafts {
+  myDrafts {
+    id
+    title
+    description
+    type
+    status
+    category {
+      id
+      name
+    }
+  }
+}
+
+query MyDraft($id: String!) {
+  myDraft(id: $id) {
+    id
+    title
+    description
+    type
+    body
+    status
+    category {
+      id
+      name
+    }
+  }
+}
+
+query EditorCategories {
+  categories {
+    id
+    name
+  }
+}
+
+mutation CreateArticleDraft($data: CreateContentInput!) {
+  createContent(data: $data) {
+    id
+  }
+}
+
+mutation UpdateArticleDraft($id: String!, $data: UpdateContentInput!) {
+  updateContent(id: $id, data: $data) {
+    id
+  }
+}

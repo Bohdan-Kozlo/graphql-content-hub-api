@@ -40,6 +40,12 @@ const FollowingPage = lazy(() =>
 const HistoryPage = lazy(() =>
   import('@/pages/history').then(({ HistoryPage }) => ({ default: HistoryPage })),
 )
+const DraftListPage = lazy(() =>
+  import('@/pages/editor').then(({ DraftListPage }) => ({ default: DraftListPage })),
+)
+const DraftEditorPage = lazy(() =>
+  import('@/pages/editor').then(({ DraftEditorPage }) => ({ default: DraftEditorPage })),
+)
 const PublicProfilePage = lazy(() =>
   import('@/pages/profile').then(({ PublicProfilePage }) => ({
     default: PublicProfilePage,
@@ -82,6 +88,15 @@ function ProtectedAccountRoute({
   return children
 }
 
+function EditorRoute({ ready, children }: { ready: boolean; children: ReactNode }) {
+  const account = useSyncExternalStore(subscribeSession, getAccount)
+  if (!ready) return <p role="status">Restoring session…</p>
+  if (!account) return <Navigate to="/login" replace />
+  if (!account.roles.some((role) => role === 'EDITOR' || role === 'ADMIN'))
+    return <Navigate to="/account" replace />
+  return children
+}
+
 function AccountAccessRoute({
   ready,
   mode,
@@ -120,6 +135,30 @@ export default function App() {
           <Route path="/" element={<PublicCatalogPage />} />
           <Route path="/content/:id" element={<PublicContentPage />} />
           <Route path="/users/:id" element={<PublicProfilePage />} />
+          <Route
+            path="/editor"
+            element={
+              <EditorRoute ready={ready}>
+                <DraftListPage />
+              </EditorRoute>
+            }
+          />
+          <Route
+            path="/editor/new"
+            element={
+              <EditorRoute ready={ready}>
+                <DraftEditorPage />
+              </EditorRoute>
+            }
+          />
+          <Route
+            path="/editor/:id"
+            element={
+              <EditorRoute ready={ready}>
+                <DraftEditorPage />
+              </EditorRoute>
+            }
+          />
           <Route
             path="/login"
             element={<AccountAccessRoute ready={ready} mode="login" />}
