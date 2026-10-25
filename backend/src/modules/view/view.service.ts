@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateViewInput } from './dto/create-view.input';
 import { ContentService } from '../content/content.service';
@@ -85,31 +85,7 @@ export class ViewService {
   }
 
   async findHistory(userId: string, first: number, after: string | undefined) {
-    const where = { userId, content: { is: { status: ContentStatus.PUBLISHED } } };
-    if (after) {
-      const cursor = await this.prismaService.readingHistory.findUnique({
-        where: { userId_contentId: { userId, contentId: after } },
-        select: { contentId: true },
-      });
-      if (!cursor) throw new BadRequestException('Invalid history cursor');
-    }
-    const history = await this.prismaService.readingHistory.findMany({
-      where,
-      orderBy: [{ lastViewedAt: 'desc' }, { contentId: 'desc' }],
-      take: first + 1,
-      cursor: after ? { userId_contentId: { userId, contentId: after } } : undefined,
-      skip: after ? 1 : undefined,
-      include: { content: { include: publicContentInclude } },
-    });
-    const items = await this.contentService.withEngagementState(
-      history.slice(0, first).map(({ content }) => content),
-      userId,
-    );
-    return {
-      items,
-      endCursor: history.at(first - 1)?.contentId ?? null,
-      hasMore: history.length > first,
-    };
+    return this.contentService.findReadingHistoryPage(userId, first, after);
   }
 
   async getViewCount(contentId: string) {

@@ -5,8 +5,7 @@ import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
 import { ContentStatus, ContentType, Prisma, ReactionType } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
-import { validateArticleBody, validatePublishableArticleBody } from './article-body';
-import { validateMediaDraft } from './media-draft';
+import { ContentLifecycle } from './content-lifecycle';
 
 type CatalogFilters = {
   search?: string;
@@ -29,14 +28,11 @@ export class ContentService {
   constructor(
     private prismaService: PrismaService,
     private userService: UserService,
+    private contentLifecycle: ContentLifecycle,
   ) {}
 
   async create(data: CreateContentInput, userId: string) {
-    validateMediaDraft(data);
-    if (data.type === ContentType.ARTICLE || data.type === ContentType.NEWS) {
-      if (!data.categoryId) throw new BadRequestException('Content category is required');
-      validateArticleBody(data.body);
-    }
+    this.contentLifecycle.validateNewContent(data);
     const user = await this.userService.findOne(userId);
     if (!user) {
       throw new BadRequestException('User not found');
@@ -113,24 +109,7 @@ export class ContentService {
       where: { id, authorId: userId, status: ContentStatus.DRAFT },
     });
     if (!draft) throw new BadRequestException('Draft is unavailable');
-    if (!draft.title.trim() || !draft.description.trim() || !draft.categoryId) {
-      throw new BadRequestException('Complete the title, description, and category before publishing');
-    }
-    if (draft.type === ContentType.ARTICLE || draft.type === ContentType.NEWS) {
-      validatePublishableArticleBody(draft.body ?? undefined);
-    } else {
-      validateMediaDraft({
-        title: draft.title,
-        description: draft.description,
-        type: draft.type,
-        categoryId: draft.categoryId,
-        mediaUrl: draft.mediaUrl ?? undefined,
-        thumbnail: draft.thumbnail ?? undefined,
-        duration: draft.duration ?? undefined,
-        body: draft.body ?? undefined,
-        readTime: draft.readTime ?? undefined,
-      });
-    }
+    this.contentLifecycle.validateDraftForPublication(draft);
 
     const result = await this.prismaService.content.updateMany({
       where: { id, authorId: userId, status: ContentStatus.DRAFT, updatedAt: draft.updatedAt },
@@ -167,6 +146,62 @@ export class ContentService {
     );
   }
 
+  async findSavedPage(first: number, after: string | undefined, userId: string) {
+    const where = {
+      userId,
+      type: ReactionType.SAVE,
+      content: { is: { status: ContentStatus.PUBLISHED } },
+    };
+    if (after) {
+      const cursor = await this.prismaService.reaction.findFirst({
+        where: { ...where, id: after },
+        select: { id: true },
+      });
+      if (!cursor) throw new BadRequestException('Invalid saved cursor');
+    }
+    const reactions = await this.prismaService.reaction.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: first + 1,
+      cursor: after ? { id: after } : undefined,
+      skip: after ? 1 : undefined,
+      include: { content: { include: publicContentInclude } },
+    });
+    const items = await this.withEngagementState(
+      reactions.slice(0, first).map(({ content }) => content),
+      userId,
+    );
+    return { items, endCursor: reactions.at(first - 1)?.id ?? null, hasMore: reactions.length > first };
+  }
+
+  async findReadingHistoryPage(userId: string, first: number, after: string | undefined) {
+    const where = { userId, content: { is: { status: ContentStatus.PUBLISHED } } };
+    if (after) {
+      const cursor = await this.prismaService.readingHistory.findUnique({
+        where: { userId_contentId: { userId, contentId: after } },
+        select: { contentId: true },
+      });
+      if (!cursor) throw new BadRequestException('Invalid history cursor');
+    }
+    const history = await this.prismaService.readingHistory.findMany({
+      where,
+      orderBy: [{ lastViewedAt: 'desc' }, { contentId: 'desc' }],
+      take: first + 1,
+      cursor: after ? { userId_contentId: { userId, contentId: after } } : undefined,
+      skip: after ? 1 : undefined,
+      include: { content: { include: publicContentInclude } },
+    });
+    const items = await this.withEngagementState(
+      history.slice(0, first).map(({ content }) => content),
+      userId,
+    );
+    return {
+      items,
+      endCursor: history.at(first - 1)?.contentId ?? null,
+      hasMore: history.length > first,
+    };
+  }
+
   private async findPublishedWhere(
     where: Prisma.ContentWhereInput,
     first: number,
@@ -198,7 +233,10 @@ export class ContentService {
     };
   }
 
-  async withEngagementState(contents: PublicContent[], userId: string | null): Promise<ContentWithEngagementState[]> {
+  private async withEngagementState(
+    contents: PublicContent[],
+    userId: string | null,
+  ): Promise<ContentWithEngagementState[]> {
     if (contents.length === 0) return [];
 
     const contentIds = contents.map(({ id }) => id);
@@ -298,40 +336,7 @@ export class ContentService {
     if (!contentBelongsToUser) {
       throw new BadRequestException('Content does not belong to user');
     }
-    if (
-      data.type === ContentType.ARTICLE ||
-      data.type === ContentType.NEWS ||
-      ((contentBelongsToUser.type === ContentType.ARTICLE || contentBelongsToUser.type === ContentType.NEWS) &&
-        data.body !== undefined)
-    )
-      validateArticleBody(data.body ?? contentBelongsToUser.body ?? undefined);
-    const updatedType = data.type ?? contentBelongsToUser.type;
-    const mediaFieldsChanged =
-      data.type !== undefined ||
-      data.mediaUrl !== undefined ||
-      data.thumbnail !== undefined ||
-      data.duration !== undefined;
-    if (
-      (updatedType === ContentType.VIDEO || updatedType === ContentType.PODCAST) &&
-      (contentBelongsToUser.status === ContentStatus.DRAFT || mediaFieldsChanged)
-    ) {
-      validateMediaDraft({
-        title: data.title ?? contentBelongsToUser.title,
-        description: data.description ?? contentBelongsToUser.description,
-        type: updatedType,
-        categoryId: data.categoryId === undefined ? (contentBelongsToUser.categoryId ?? undefined) : data.categoryId,
-        mediaUrl: data.mediaUrl === undefined ? (contentBelongsToUser.mediaUrl ?? undefined) : data.mediaUrl,
-        thumbnail: data.thumbnail === undefined ? (contentBelongsToUser.thumbnail ?? undefined) : data.thumbnail,
-        duration: data.duration === undefined ? (contentBelongsToUser.duration ?? undefined) : data.duration,
-        body: data.body === undefined ? (contentBelongsToUser.body ?? undefined) : data.body,
-        readTime: data.readTime === undefined ? (contentBelongsToUser.readTime ?? undefined) : data.readTime,
-      });
-    }
-    if (
-      (updatedType === ContentType.ARTICLE || updatedType === ContentType.NEWS) &&
-      !(data.categoryId ?? contentBelongsToUser.categoryId)
-    )
-      throw new BadRequestException('Content category is required');
+    this.contentLifecycle.validateContentUpdate(contentBelongsToUser, data);
 
     const content = await this.prismaService.content.update({
       where: { id, authorId: userId },

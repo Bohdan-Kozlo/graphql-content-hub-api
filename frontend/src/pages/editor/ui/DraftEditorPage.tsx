@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useApolloClient, useMutation, useQuery } from '@apollo/client/react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useQuery } from '@apollo/client/react'
+import { Link, useParams, useSearchParams } from 'react-router'
 import {
-  CreateEditorDraftDocument,
   EditorMetadataOptionsDocument,
   MyContentDocument,
-  RemoveEditorContentDocument,
-  UpdateEditorDraftDocument,
 } from '@/shared/api/gql/graphql'
 import type { ContentType } from '@/shared/api/gql/graphql'
 import { RichTextEditor } from './RichTextEditor'
 import { ArticleBody } from '@/entities/content'
-import { mediaDraftError, mediaDraftFields } from '../model/media-draft'
+import { useEditorWorkflow } from '../model/use-editor-workflow'
 import { MediaDraftFields } from './MediaDraftFields'
 
 const emptyBody = JSON.stringify({
@@ -24,8 +21,7 @@ const emptyBody = JSON.stringify({
 export default function DraftEditorPage() {
   const { id } = useParams<'id'>()
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const client = useApolloClient()
+  const workflow = useEditorWorkflow()
   const existing = Boolean(id)
   const draft = useQuery(MyContentDocument, {
     variables: { id: id ?? '' },
@@ -33,10 +29,6 @@ export default function DraftEditorPage() {
     fetchPolicy: 'network-only',
   })
   const metadataOptions = useQuery(EditorMetadataOptionsDocument)
-  const [create, creating] = useMutation(CreateEditorDraftDocument)
-  const [update, updating] = useMutation(UpdateEditorDraftDocument)
-  const [remove, removing] = useMutation(RemoveEditorContentDocument)
-  const [error, setError] = useState('')
   const [title, setTitle] = useState<string | null>(null)
   const [description, setDescription] = useState<string | null>(null)
   const [categoryId, setCategoryId] = useState<string | null>(null)
@@ -85,91 +77,21 @@ export default function DraftEditorPage() {
     )
   }
 
-  function invalidateContent() {
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'content', args: { id } })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myContent', args: { id } })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'publishedContents' })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myPublishedContents' })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myDrafts' })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'followingFeed' })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'savedContents' })
-    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myViewHistory' })
-    client.cache.gc()
-  }
-
-  async function deleteContent() {
-    if (
-      !id ||
-      !window.confirm(
-        `Delete “${saved?.title ?? 'this content'}” permanently? This also removes its comments, reactions, views, and bookmarks.`,
-      )
-    )
-      return
-    setError('')
-    try {
-      await remove({ variables: { id } })
-      invalidateContent()
-      navigate('/editor')
-    } catch {
-      setError('Unable to delete this content. Please try again.')
-    }
-  }
-
-  async function save(event: FormEvent<HTMLFormElement>) {
+  function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError('')
-    if (!currentTitle.trim() || !currentDescription.trim() || !currentCategory) {
-      setError('Complete the title, description, and category.')
-      return
-    }
-    const invalidMedia = isMedia
-      ? mediaDraftError(currentMediaUrl, currentThumbnail, currentDuration)
-      : null
-    if (invalidMedia) {
-      setError(invalidMedia)
-      return
-    }
-    const mediaFields = isMedia
-      ? mediaDraftFields(currentMediaUrl, currentThumbnail, currentDuration)
-      : {}
-    try {
-      if (id) {
-        await update({
-          variables: {
-            id,
-            data: {
-              title: currentTitle.trim(),
-              description: currentDescription.trim(),
-              categoryId: currentCategory,
-              tagIds: currentTagIds,
-              sourceId: currentSourceId || null,
-              ...mediaFields,
-              ...(!isMedia && body !== null ? { body } : {}),
-            },
-          },
-        })
-        invalidateContent()
-        navigate('/editor')
-      } else {
-        const result = await create({
-          variables: {
-            data: {
-              title: currentTitle.trim(),
-              description: currentDescription.trim(),
-              categoryId: currentCategory,
-              type,
-              ...(!isMedia ? { body: currentBody } : {}),
-              tagIds: currentTagIds,
-              sourceId: currentSourceId || undefined,
-              ...mediaFields,
-            },
-          },
-        })
-        navigate(`/editor/${result.data?.createContent.id}`)
-      }
-    } catch {
-      setError('Unable to save this content. Please try again.')
-    }
+    void workflow.save(id, {
+      title: currentTitle,
+      description: currentDescription,
+      categoryId: currentCategory,
+      tagIds: currentTagIds,
+      sourceId: currentSourceId,
+      body: currentBody,
+      bodyChanged: body !== null,
+      mediaUrl: currentMediaUrl,
+      thumbnail: currentThumbnail,
+      duration: currentDuration,
+      type,
+    })
   }
 
   if (existing && draft.loading && !saved)
@@ -198,7 +120,7 @@ export default function DraftEditorPage() {
       <h1 className="mt-3 font-hub-display text-5xl font-semibold">
         {existing ? `Edit ${kind}` : `New ${kind}`}
       </h1>
-      <form onSubmit={(event) => void save(event)} className="mt-10 space-y-6">
+      <form onSubmit={save} className="mt-10 space-y-6">
         <label className="block font-semibold">
           Title
           <input
@@ -334,30 +256,26 @@ export default function DraftEditorPage() {
             )}
           </div>
         )}
-        {error && (
+        {workflow.error && (
           <p role="alert" className="text-red-600">
-            {error}
+            {workflow.error}
           </p>
         )}
         <button
-          disabled={creating.loading || updating.loading || metadataOptions.loading}
+          disabled={workflow.saving || metadataOptions.loading}
           type="submit"
           className="rounded-full bg-hub-accent px-7 py-3 font-semibold text-hub-page disabled:opacity-50"
         >
-          {creating.loading || updating.loading
-            ? 'Saving…'
-            : isPublished
-              ? 'Save changes'
-              : 'Save draft'}
+          {workflow.saving ? 'Saving…' : isPublished ? 'Save changes' : 'Save draft'}
         </button>
         {existing && (
           <button
             type="button"
-            disabled={removing.loading || updating.loading}
-            onClick={() => void deleteContent()}
+            disabled={workflow.removing || workflow.saving}
+            onClick={() => void workflow.deleteContent(id, saved?.title)}
             className="ml-4 rounded-full border border-red-600 px-7 py-3 font-semibold text-red-600 disabled:opacity-50"
           >
-            {removing.loading ? 'Deleting…' : 'Delete content'}
+            {workflow.removing ? 'Deleting…' : 'Delete content'}
           </button>
         )}
       </form>

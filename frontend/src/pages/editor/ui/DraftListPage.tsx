@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from '@apollo/client/react'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client/react'
 import { Link } from 'react-router'
 import {
   MyDraftsDocument,
   MyPublishedContentsDocument,
   PublishEditorDraftDocument,
 } from '@/shared/api/gql/graphql'
+import { invalidateEditorContent } from '../model/editor-workflow'
 
 export default function DraftListPage() {
+  const client = useApolloClient()
   const { data, loading, error, refetch } = useQuery(MyDraftsDocument, {
     fetchPolicy: 'network-only',
   })
@@ -24,9 +26,8 @@ export default function DraftListPage() {
     setPublishErrorId(null)
     try {
       await publish({ variables: { id } })
+      invalidateEditorContent(client, id)
       setPublished({ id, title })
-      void refetch().catch(() => undefined)
-      void publishedContents.refetch().catch(() => undefined)
     } catch {
       setPublishErrorId(id)
     } finally {

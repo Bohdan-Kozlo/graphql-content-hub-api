@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { ContentResolver } from './content.resolver';
 import { UserModule } from '../user/user.module';
+import { ContentLifecycle } from './content-lifecycle';
 
 @Module({
-  providers: [ContentResolver, ContentService],
+  providers: [ContentResolver, ContentService, ContentLifecycle],
   imports: [UserModule],
   exports: [ContentService],
 })
