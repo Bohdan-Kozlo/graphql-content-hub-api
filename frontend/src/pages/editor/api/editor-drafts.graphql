@@ -27,6 +27,9 @@ query MyDraft($id: String!) {
     description
     type
     body
+    mediaUrl
+    thumbnail
+    duration
     status
     category {
       id

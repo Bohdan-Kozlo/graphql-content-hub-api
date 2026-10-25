@@ -1,10 +1,9 @@
 import { Link } from 'react-router'
 import type { PublicContentQuery } from '@/shared/api/gql/graphql'
 import { Avatar } from '@/shared/ui/avatar'
-import PublicMedia from './PublicMedia'
 import { StoryDetails } from './StoryDetails'
 import { ContentReactionControls } from '@/features/content-reaction'
-import { ArticleBody, ViewCount } from '@/entities/content'
+import { ArticleBody, PublicMedia, ViewCount } from '@/entities/content'
 
 type Story = NonNullable<PublicContentQuery['content']>
 

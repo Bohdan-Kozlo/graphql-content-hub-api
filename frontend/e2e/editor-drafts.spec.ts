@@ -18,6 +18,9 @@ test('editor creates and reopens a formatted article draft', async ({ page }) =>
     category: { id: string; name: string }
     tags: { id: string; name: string }[]
     source: { id: string; name: string } | null
+    mediaUrl: string | null
+    thumbnail: string | null
+    duration: number | null
   } | null = null
   await page.route('**/graphql', async (route) => {
     const { query, variables } = route.request().postDataJSON() as {
@@ -52,6 +55,9 @@ test('editor creates and reopens a formatted article draft', async ({ page }) =>
         category: { id: 'science', name: 'Science' },
         tags: [],
         source: null,
+        mediaUrl: null,
+        thumbnail: null,
+        duration: null,
       }
       return route.fulfill({ json: { data: { createContent: { id: 'draft-1' } } } })
     }
@@ -126,6 +132,9 @@ test('editor creates news with tags and source, then changes its saved metadata'
         category: { id: 'science', name: 'Science' },
         tags,
         source: sources[0],
+        mediaUrl: null,
+        thumbnail: null,
+        duration: null,
       }
       return route.fulfill({ json: { data: { createContent: { id: 'news-1' } } } })
     }

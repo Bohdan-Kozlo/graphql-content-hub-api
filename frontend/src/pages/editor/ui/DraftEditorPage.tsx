@@ -8,8 +8,11 @@ import {
   MyDraftDocument,
   UpdateEditorDraftDocument,
 } from '@/shared/api/gql/graphql'
+import type { ContentType } from '@/shared/api/gql/graphql'
 import { RichTextEditor } from './RichTextEditor'
 import { ArticleBody } from '@/entities/content'
+import { mediaDraftError, mediaDraftFields } from '../model/media-draft'
+import { MediaDraftFields } from './MediaDraftFields'
 
 const emptyBody = JSON.stringify({
   version: 1,
@@ -37,16 +40,30 @@ export default function DraftEditorPage() {
   const [body, setBody] = useState<string | null>(null)
   const [tagIds, setTagIds] = useState<string[] | null>(null)
   const [sourceId, setSourceId] = useState<string | null>(null)
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null)
+  const [thumbnail, setThumbnail] = useState<string | null>(null)
+  const [duration, setDuration] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
   const saved = draft.data?.myDraft
-  const isNews = saved ? saved.type === 'NEWS' : searchParams.get('type') === 'news'
-  const kind = isNews ? 'news' : 'article'
+  const requestedType = searchParams.get('type')?.toUpperCase()
+  const type: ContentType =
+    saved?.type ??
+    (requestedType === 'NEWS' || requestedType === 'VIDEO' || requestedType === 'PODCAST'
+      ? requestedType
+      : 'ARTICLE')
+  const isNews = type === 'NEWS'
+  const isMedia = type === 'VIDEO' || type === 'PODCAST'
+  const kind = type.toLowerCase()
   const currentTitle = title ?? saved?.title ?? ''
   const currentDescription = description ?? saved?.description ?? ''
   const currentCategory = categoryId ?? saved?.category?.id ?? ''
   const currentBody = body ?? saved?.body ?? emptyBody
   const currentTagIds = tagIds ?? saved?.tags.map((tag) => tag.id) ?? []
   const currentSourceId = sourceId ?? saved?.source?.id ?? ''
+  const currentMediaUrl = mediaUrl ?? saved?.mediaUrl ?? ''
+  const currentThumbnail = thumbnail ?? saved?.thumbnail ?? ''
+  const currentDuration =
+    duration ?? (saved?.duration == null ? '' : String(saved.duration))
   const selectedCategory = metadataOptions.data?.categories.find(
     (item) => item.id === currentCategory,
   )
@@ -71,6 +88,16 @@ export default function DraftEditorPage() {
       setError('Complete the title, description, and category.')
       return
     }
+    const invalidMedia = isMedia
+      ? mediaDraftError(currentMediaUrl, currentThumbnail, currentDuration)
+      : null
+    if (invalidMedia) {
+      setError(invalidMedia)
+      return
+    }
+    const mediaFields = isMedia
+      ? mediaDraftFields(currentMediaUrl, currentThumbnail, currentDuration)
+      : {}
     try {
       if (id) {
         await update({
@@ -80,10 +107,10 @@ export default function DraftEditorPage() {
               title: currentTitle.trim(),
               description: currentDescription.trim(),
               categoryId: currentCategory,
-              ...(isNews
-                ? { tagIds: currentTagIds, sourceId: currentSourceId || null }
-                : {}),
-              ...(body !== null ? { body } : {}),
+              ...(isNews || isMedia ? { tagIds: currentTagIds } : {}),
+              ...(isNews ? { sourceId: currentSourceId || null } : {}),
+              ...mediaFields,
+              ...(!isMedia && body !== null ? { body } : {}),
             },
           },
         })
@@ -95,11 +122,11 @@ export default function DraftEditorPage() {
               title: currentTitle.trim(),
               description: currentDescription.trim(),
               categoryId: currentCategory,
-              body: currentBody,
-              type: isNews ? 'NEWS' : 'ARTICLE',
-              ...(isNews
-                ? { tagIds: currentTagIds, sourceId: currentSourceId || undefined }
-                : {}),
+              type,
+              ...(!isMedia ? { body: currentBody } : {}),
+              ...(isNews || isMedia ? { tagIds: currentTagIds } : {}),
+              ...(isNews ? { sourceId: currentSourceId || undefined } : {}),
+              ...mediaFields,
             },
           },
         })
@@ -184,7 +211,7 @@ export default function DraftEditorPage() {
             </button>
           </p>
         )}
-        {isNews && (
+        {(isNews || isMedia) && (
           <>
             <fieldset className="space-y-3">
               <legend className="font-semibold">Tags</legend>
@@ -204,57 +231,78 @@ export default function DraftEditorPage() {
                 ))}
               </div>
             </fieldset>
-            <label className="block font-semibold">
-              Source (optional)
-              <select
-                value={currentSourceId}
-                onChange={(event) => setSourceId(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-hub-line bg-hub-page px-4 py-3"
-              >
-                <option value="">No source</option>
-                {metadataOptions.data?.sources.map((source) => (
-                  <option key={source.id} value={source.id}>
-                    {source.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {isNews && (
+              <label className="block font-semibold">
+                Source (optional)
+                <select
+                  value={currentSourceId}
+                  onChange={(event) => setSourceId(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-hub-line bg-hub-page px-4 py-3"
+                >
+                  <option value="">No source</option>
+                  {metadataOptions.data?.sources.map((source) => (
+                    <option key={source.id} value={source.id}>
+                      {source.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </>
         )}
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-4">
-            <p className="font-semibold">{isNews ? 'News text' : 'Article text'}</p>
-            <button
-              type="button"
-              onClick={() => setPreview(!preview)}
-              className="text-sm font-semibold text-hub-accent underline"
-            >
-              {preview ? 'Edit text' : 'Preview'}
-            </button>
-          </div>
-          {preview ? (
-            <div
-              aria-label={isNews ? 'News preview' : 'Article preview'}
-              className="min-h-64 space-y-5 rounded-2xl border border-hub-line bg-hub-page p-6 leading-8"
-            >
-              <ArticleBody body={currentBody} />
-              {isNews && (
-                <div className="border-t border-hub-line pt-4 text-sm text-hub-muted">
-                  <p>Category: {selectedCategory?.name ?? 'None'}</p>
-                  <p>Tags: {selectedTags.map((tag) => tag.name).join(', ') || 'None'}</p>
-                  <p>Source: {selectedSource?.name ?? 'None'}</p>
-                </div>
-              )}
+        {isMedia ? (
+          <MediaDraftFields
+            type={type}
+            title={currentTitle}
+            mediaUrl={currentMediaUrl}
+            thumbnail={currentThumbnail}
+            duration={currentDuration}
+            categoryName={selectedCategory?.name ?? 'None'}
+            tagNames={selectedTags.map((tag) => tag.name)}
+            preview={preview}
+            onMediaUrlChange={setMediaUrl}
+            onThumbnailChange={setThumbnail}
+            onDurationChange={setDuration}
+            onPreviewChange={setPreview}
+          />
+        ) : (
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <p className="font-semibold">{isNews ? 'News text' : 'Article text'}</p>
+              <button
+                type="button"
+                onClick={() => setPreview(!preview)}
+                className="text-sm font-semibold text-hub-accent underline"
+              >
+                {preview ? 'Edit text' : 'Preview'}
+              </button>
             </div>
-          ) : (
-            <RichTextEditor
-              key={id ?? 'new'}
-              initialBody={currentBody}
-              onChange={setBody}
-              label={isNews ? 'News text' : 'Article text'}
-            />
-          )}
-        </div>
+            {preview ? (
+              <div
+                aria-label={isNews ? 'News preview' : 'Article preview'}
+                className="min-h-64 space-y-5 rounded-2xl border border-hub-line bg-hub-page p-6 leading-8"
+              >
+                <ArticleBody body={currentBody} />
+                {isNews && (
+                  <div className="border-t border-hub-line pt-4 text-sm text-hub-muted">
+                    <p>Category: {selectedCategory?.name ?? 'None'}</p>
+                    <p>
+                      Tags: {selectedTags.map((tag) => tag.name).join(', ') || 'None'}
+                    </p>
+                    <p>Source: {selectedSource?.name ?? 'None'}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <RichTextEditor
+                key={id ?? 'new'}
+                initialBody={currentBody}
+                onChange={setBody}
+                label={isNews ? 'News text' : 'Article text'}
+              />
+            )}
+          </div>
+        )}
         {error && (
           <p role="alert" className="text-red-600">
             {error}

@@ -15,7 +15,7 @@ export default function DraftListPage() {
           </p>
           <h1 className="mt-3 font-hub-display text-5xl font-semibold">Your drafts</h1>
           <p className="mt-3 text-hub-muted">
-            Articles and news in progress are private until published.
+            Your work in progress is private until published.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -30,6 +30,18 @@ export default function DraftListPage() {
             className="rounded-full border border-hub-line px-6 py-3 font-semibold"
           >
             New news
+          </Link>
+          <Link
+            to="/editor/new?type=video"
+            className="rounded-full border border-hub-line px-6 py-3 font-semibold"
+          >
+            New video
+          </Link>
+          <Link
+            to="/editor/new?type=podcast"
+            className="rounded-full border border-hub-line px-6 py-3 font-semibold"
+          >
+            New podcast
           </Link>
         </div>
       </div>
@@ -56,12 +68,7 @@ export default function DraftListPage() {
             className="rounded-3xl border border-hub-line bg-hub-surface p-6"
           >
             <span className="text-xs font-bold tracking-widest text-hub-accent uppercase">
-              {draft.type === 'NEWS'
-                ? 'News draft'
-                : draft.type === 'ARTICLE'
-                  ? 'Article draft'
-                  : 'Draft'}{' '}
-              · {draft.category?.name ?? 'Uncategorized'}
+              {draft.type.toLowerCase()} draft · {draft.category?.name ?? 'Uncategorized'}
             </span>
             <h2 className="mt-3 font-hub-display text-2xl font-semibold">
               {draft.title}

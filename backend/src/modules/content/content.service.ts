@@ -6,6 +6,7 @@ import { UpdateContentInput } from './dto/update-content.input';
 import { ContentStatus, ContentType, Prisma, ReactionType } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
 import { validateArticleBody } from './article-body';
+import { validateMediaDraft } from './media-draft';
 
 type CatalogFilters = {
   search?: string;
@@ -31,6 +32,7 @@ export class ContentService {
   ) {}
 
   async create(data: CreateContentInput, userId: string) {
+    validateMediaDraft(data);
     if (data.type === ContentType.ARTICLE || data.type === ContentType.NEWS) {
       if (!data.categoryId) throw new BadRequestException('Content category is required');
       validateArticleBody(data.body);
@@ -255,6 +257,22 @@ export class ContentService {
     )
       validateArticleBody(data.body ?? contentBelongsToUser.body ?? undefined);
     const updatedType = data.type ?? contentBelongsToUser.type;
+    if (
+      contentBelongsToUser.status === ContentStatus.DRAFT &&
+      (updatedType === ContentType.VIDEO || updatedType === ContentType.PODCAST)
+    ) {
+      validateMediaDraft({
+        title: data.title ?? contentBelongsToUser.title,
+        description: data.description ?? contentBelongsToUser.description,
+        type: updatedType,
+        categoryId: data.categoryId === undefined ? (contentBelongsToUser.categoryId ?? undefined) : data.categoryId,
+        mediaUrl: data.mediaUrl === undefined ? (contentBelongsToUser.mediaUrl ?? undefined) : data.mediaUrl,
+        thumbnail: data.thumbnail === undefined ? (contentBelongsToUser.thumbnail ?? undefined) : data.thumbnail,
+        duration: data.duration === undefined ? (contentBelongsToUser.duration ?? undefined) : data.duration,
+        body: data.body === undefined ? (contentBelongsToUser.body ?? undefined) : data.body,
+        readTime: data.readTime === undefined ? (contentBelongsToUser.readTime ?? undefined) : data.readTime,
+      });
+    }
     if (
       (updatedType === ContentType.ARTICLE || updatedType === ContentType.NEWS) &&
       !(data.categoryId ?? contentBelongsToUser.categoryId)

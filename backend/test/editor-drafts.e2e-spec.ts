@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -110,11 +110,15 @@ describe('Editor drafts GraphQL HTTP', () => {
   });
 
   it('requires a category when another draft becomes an article', async () => {
-    const video = await post(create, editorToken, {
-      data: { title: 'Video draft', description: 'Work in progress', type: 'VIDEO' },
+    const video = await prisma.content.create({
+      data: {
+        title: 'Legacy video draft',
+        description: 'Work in progress',
+        type: 'VIDEO',
+        authorId: userIds[0],
+      },
     });
-    expect(video.body.errors).toBeUndefined();
-    const videoId = video.body.data.createContent.id as string;
+    const videoId = video.id;
     const changed = await post(
       'mutation Update($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id } }',
       editorToken,
@@ -189,5 +193,103 @@ describe('Editor drafts GraphQL HTTP', () => {
     expect(
       (await post(create, editorToken, { data: { ...data(), type: 'NEWS', body: '<script />' } })).body.errors,
     ).toBeDefined();
+  });
+
+  it.each(['VIDEO', 'PODCAST'])('creates a private %s draft with media metadata', async (type) => {
+    const mutation = `mutation Create($data: CreateContentInput!) { createContent(data: $data) { id type status mediaUrl thumbnail duration body readTime category { id } tags { id } } }`;
+    const mediaUrl =
+      type === 'VIDEO'
+        ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        : 'https://open.spotify.com/episode/4uLU6hMCjMI75M1A2tKUQC';
+    const created = await post(mutation, editorToken, {
+      data: {
+        title: `${type} ${marker}`,
+        description: 'Media draft',
+        type,
+        mediaUrl,
+        thumbnail: 'https://example.org/cover.jpg',
+        duration: 180,
+        categoryId,
+        tagIds: [tagIds[0]],
+      },
+    });
+    expect(created.body.errors).toBeUndefined();
+    const item = created.body.data.createContent;
+    expect(item).toMatchObject({
+      type,
+      status: 'DRAFT',
+      mediaUrl,
+      thumbnail: 'https://example.org/cover.jpg',
+      duration: 180,
+      body: null,
+      readTime: null,
+      category: { id: categoryId },
+      tags: [{ id: tagIds[0] }],
+    });
+    expect(
+      (await post('query($id: String!) { myDraft(id: $id) { id } }', otherToken, { id: item.id })).body.data.myDraft,
+    ).toBeNull();
+    expect(
+      (await post('query($id: String!) { content(id: $id) { id } }', undefined, { id: item.id })).body.data.content,
+    ).toBeNull();
+    expect(
+      (
+        await post(
+          'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id } }',
+          otherToken,
+          { id: item.id, data: { title: 'Stolen' } },
+        )
+      ).body.errors,
+    ).toBeDefined();
+    expect(
+      (
+        await post(
+          'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id } }',
+          editorToken,
+          { id: item.id, data: { mediaUrl: 'javascript:alert(1)' } },
+        )
+      ).body.errors,
+    ).toBeDefined();
+  });
+
+  it('rejects invalid media fields and URLs', async () => {
+    const base = {
+      title: 'Media',
+      description: 'Draft',
+      type: 'VIDEO',
+      mediaUrl: 'https://youtu.be/dQw4w9WgXcQ',
+      categoryId,
+    };
+    for (const data of [
+      { ...base, mediaUrl: 'javascript:alert(1)' },
+      { ...base, thumbnail: 'file:///cover.jpg' },
+      { ...base, categoryId: undefined },
+      { ...base, mediaUrl: undefined },
+      { ...base, body },
+      { ...base, readTime: 4 },
+      { ...base, duration: -1 },
+    ]) {
+      expect((await post(create, editorToken, { data })).body.errors).toBeDefined();
+    }
+  });
+
+  it('still allows an editor to correct the title of legacy published media', async () => {
+    const legacy = await prisma.content.create({
+      data: {
+        title: 'Older video',
+        description: 'Imported before media draft rules',
+        type: 'VIDEO',
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        authorId: userIds[0],
+      },
+    });
+    const changed = await post(
+      'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id title } }',
+      editorToken,
+      { id: legacy.id, data: { title: 'Corrected video' } },
+    );
+    expect(changed.body.errors).toBeUndefined();
+    expect(changed.body.data.updateContent.title).toBe('Corrected video');
   });
 });
