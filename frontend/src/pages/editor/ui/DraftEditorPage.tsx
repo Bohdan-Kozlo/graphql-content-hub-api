@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useMutation, useQuery } from '@apollo/client/react'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client/react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   CreateEditorDraftDocument,
   EditorMetadataOptionsDocument,
-  MyDraftDocument,
+  MyContentDocument,
+  RemoveEditorContentDocument,
   UpdateEditorDraftDocument,
 } from '@/shared/api/gql/graphql'
 import type { ContentType } from '@/shared/api/gql/graphql'
@@ -24,8 +25,9 @@ export default function DraftEditorPage() {
   const { id } = useParams<'id'>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const client = useApolloClient()
   const existing = Boolean(id)
-  const draft = useQuery(MyDraftDocument, {
+  const draft = useQuery(MyContentDocument, {
     variables: { id: id ?? '' },
     skip: !id,
     fetchPolicy: 'network-only',
@@ -33,6 +35,7 @@ export default function DraftEditorPage() {
   const metadataOptions = useQuery(EditorMetadataOptionsDocument)
   const [create, creating] = useMutation(CreateEditorDraftDocument)
   const [update, updating] = useMutation(UpdateEditorDraftDocument)
+  const [remove, removing] = useMutation(RemoveEditorContentDocument)
   const [error, setError] = useState('')
   const [title, setTitle] = useState<string | null>(null)
   const [description, setDescription] = useState<string | null>(null)
@@ -44,7 +47,8 @@ export default function DraftEditorPage() {
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [duration, setDuration] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
-  const saved = draft.data?.myDraft
+  const saved = draft.data?.myContent
+  const isPublished = saved?.status === 'PUBLISHED'
   const requestedType = searchParams.get('type')?.toUpperCase()
   const type: ContentType =
     saved?.type ??
@@ -81,6 +85,36 @@ export default function DraftEditorPage() {
     )
   }
 
+  function invalidateContent() {
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'content', args: { id } })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myContent', args: { id } })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'publishedContents' })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myPublishedContents' })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myDrafts' })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'followingFeed' })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'savedContents' })
+    client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'myViewHistory' })
+    client.cache.gc()
+  }
+
+  async function deleteContent() {
+    if (
+      !id ||
+      !window.confirm(
+        `Delete “${saved?.title ?? 'this content'}” permanently? This also removes its comments, reactions, views, and bookmarks.`,
+      )
+    )
+      return
+    setError('')
+    try {
+      await remove({ variables: { id } })
+      invalidateContent()
+      navigate('/editor')
+    } catch {
+      setError('Unable to delete this content. Please try again.')
+    }
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
@@ -107,13 +141,14 @@ export default function DraftEditorPage() {
               title: currentTitle.trim(),
               description: currentDescription.trim(),
               categoryId: currentCategory,
-              ...(isNews || isMedia ? { tagIds: currentTagIds } : {}),
-              ...(isNews ? { sourceId: currentSourceId || null } : {}),
+              tagIds: currentTagIds,
+              sourceId: currentSourceId || null,
               ...mediaFields,
               ...(!isMedia && body !== null ? { body } : {}),
             },
           },
         })
+        invalidateContent()
         navigate('/editor')
       } else {
         const result = await create({
@@ -124,8 +159,8 @@ export default function DraftEditorPage() {
               categoryId: currentCategory,
               type,
               ...(!isMedia ? { body: currentBody } : {}),
-              ...(isNews || isMedia ? { tagIds: currentTagIds } : {}),
-              ...(isNews ? { sourceId: currentSourceId || undefined } : {}),
+              tagIds: currentTagIds,
+              sourceId: currentSourceId || undefined,
               ...mediaFields,
             },
           },
@@ -133,32 +168,32 @@ export default function DraftEditorPage() {
         navigate(`/editor/${result.data?.createContent.id}`)
       }
     } catch {
-      setError('Unable to save this draft. Please try again.')
+      setError('Unable to save this content. Please try again.')
     }
   }
 
   if (existing && draft.loading && !saved)
     return (
       <p role="status" className="mx-auto max-w-4xl px-5 py-24">
-        Loading draft…
+        Loading content…
       </p>
     )
   if (existing && (draft.error || !saved))
     return (
       <div role="alert" className="mx-auto max-w-4xl px-5 py-24">
-        Draft unavailable.{' '}
+        Content unavailable.{' '}
         <Link to="/editor" className="underline">
-          Back to drafts
+          Back to your content
         </Link>
       </div>
     )
   return (
     <div className="mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
       <Link to="/editor" className="text-sm font-semibold text-hub-accent underline">
-        ← Your drafts
+        ← Your content
       </Link>
       <p className="mt-10 text-xs font-bold tracking-[0.22em] text-hub-accent uppercase">
-        Private {kind} draft
+        {isPublished ? `Published ${kind}` : `Private ${kind} draft`}
       </p>
       <h1 className="mt-3 font-hub-display text-5xl font-semibold">
         {existing ? `Edit ${kind}` : `New ${kind}`}
@@ -211,45 +246,41 @@ export default function DraftEditorPage() {
             </button>
           </p>
         )}
-        {(isNews || isMedia) && (
-          <>
-            <fieldset className="space-y-3">
-              <legend className="font-semibold">Tags</legend>
-              {metadataOptions.data?.tags.length === 0 && (
-                <p className="text-sm text-hub-muted">No tags available.</p>
-              )}
-              <div className="flex flex-wrap gap-4">
-                {metadataOptions.data?.tags.map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={currentTagIds.includes(tag.id)}
-                      onChange={() => toggleTag(tag.id)}
-                    />
-                    {tag.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            {isNews && (
-              <label className="block font-semibold">
-                Source (optional)
-                <select
-                  value={currentSourceId}
-                  onChange={(event) => setSourceId(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-hub-line bg-hub-page px-4 py-3"
-                >
-                  <option value="">No source</option>
-                  {metadataOptions.data?.sources.map((source) => (
-                    <option key={source.id} value={source.id}>
-                      {source.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        <>
+          <fieldset className="space-y-3">
+            <legend className="font-semibold">Tags</legend>
+            {metadataOptions.data?.tags.length === 0 && (
+              <p className="text-sm text-hub-muted">No tags available.</p>
             )}
-          </>
-        )}
+            <div className="flex flex-wrap gap-4">
+              {metadataOptions.data?.tags.map((tag) => (
+                <label key={tag.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={currentTagIds.includes(tag.id)}
+                    onChange={() => toggleTag(tag.id)}
+                  />
+                  {tag.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="block font-semibold">
+            Source (optional)
+            <select
+              value={currentSourceId}
+              onChange={(event) => setSourceId(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-hub-line bg-hub-page px-4 py-3"
+            >
+              <option value="">No source</option>
+              {metadataOptions.data?.sources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
         {isMedia ? (
           <MediaDraftFields
             type={type}
@@ -313,8 +344,22 @@ export default function DraftEditorPage() {
           type="submit"
           className="rounded-full bg-hub-accent px-7 py-3 font-semibold text-hub-page disabled:opacity-50"
         >
-          {creating.loading || updating.loading ? 'Saving…' : 'Save draft'}
+          {creating.loading || updating.loading
+            ? 'Saving…'
+            : isPublished
+              ? 'Save changes'
+              : 'Save draft'}
         </button>
+        {existing && (
+          <button
+            type="button"
+            disabled={removing.loading || updating.loading}
+            onClick={() => void deleteContent()}
+            className="ml-4 rounded-full border border-red-600 px-7 py-3 font-semibold text-red-600 disabled:opacity-50"
+          >
+            {removing.loading ? 'Deleting…' : 'Delete content'}
+          </button>
+        )}
       </form>
     </div>
   )

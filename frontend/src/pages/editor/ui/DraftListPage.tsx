@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client/react'
 import { Link } from 'react-router'
-import { MyDraftsDocument, PublishEditorDraftDocument } from '@/shared/api/gql/graphql'
+import {
+  MyDraftsDocument,
+  MyPublishedContentsDocument,
+  PublishEditorDraftDocument,
+} from '@/shared/api/gql/graphql'
 
 export default function DraftListPage() {
   const { data, loading, error, refetch } = useQuery(MyDraftsDocument, {
+    fetchPolicy: 'network-only',
+  })
+  const publishedContents = useQuery(MyPublishedContentsDocument, {
     fetchPolicy: 'network-only',
   })
   const [publish] = useMutation(PublishEditorDraftDocument)
@@ -19,6 +26,7 @@ export default function DraftListPage() {
       await publish({ variables: { id } })
       setPublished({ id, title })
       void refetch().catch(() => undefined)
+      void publishedContents.refetch().catch(() => undefined)
     } catch {
       setPublishErrorId(id)
     } finally {
@@ -34,7 +42,7 @@ export default function DraftListPage() {
           <p className="text-xs font-bold tracking-[0.22em] text-hub-accent uppercase">
             Workspace
           </p>
-          <h1 className="mt-3 font-hub-display text-5xl font-semibold">Your drafts</h1>
+          <h1 className="mt-3 font-hub-display text-5xl font-semibold">Your content</h1>
           <p className="mt-3 text-hub-muted">
             Your work in progress is private until published.
           </p>
@@ -66,6 +74,62 @@ export default function DraftListPage() {
           </Link>
         </div>
       </div>
+      <section className="mt-10">
+        <h2 className="font-hub-display text-3xl font-semibold">Published stories</h2>
+        {publishedContents.loading && (
+          <p role="status" className="mt-4">
+            Loading published stories…
+          </p>
+        )}
+        {publishedContents.error && (
+          <p role="alert" className="mt-4">
+            Unable to load published stories.{' '}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => void publishedContents.refetch()}
+            >
+              Try again
+            </button>
+          </p>
+        )}
+        {!publishedContents.loading &&
+          !publishedContents.error &&
+          publishedContents.data?.myPublishedContents.length === 0 && (
+            <p className="mt-4 text-hub-muted">No published stories yet.</p>
+          )}
+        <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+          {publishedContents.data?.myPublishedContents.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-3xl border border-hub-line bg-hub-surface p-6"
+            >
+              <p className="text-xs font-bold tracking-widest text-hub-accent uppercase">
+                {item.type.toLowerCase()} · {item.category?.name ?? 'Uncategorized'}
+              </p>
+              <h3 className="mt-3 font-hub-display text-2xl font-semibold">
+                {item.title}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-hub-muted">{item.description}</p>
+              <div className="mt-5 flex flex-wrap gap-4">
+                <Link
+                  to={`/editor/${encodeURIComponent(item.id)}`}
+                  className="font-semibold text-hub-accent underline"
+                >
+                  Edit published story
+                </Link>
+                <Link
+                  to={`/content/${encodeURIComponent(item.id)}`}
+                  className="font-semibold text-hub-accent underline"
+                >
+                  View story
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <h2 className="mt-12 font-hub-display text-3xl font-semibold">Your drafts</h2>
       {loading && (
         <p role="status" className="mt-10">
           Loading drafts…

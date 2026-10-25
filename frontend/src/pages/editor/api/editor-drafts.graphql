@@ -20,8 +20,23 @@ query MyDrafts {
   }
 }
 
-query MyDraft($id: String!) {
-  myDraft(id: $id) {
+query MyPublishedContents {
+  myPublishedContents {
+    id
+    title
+    description
+    type
+    status
+    publishedAt
+    category {
+      id
+      name
+    }
+  }
+}
+
+query MyContent($id: String!) {
+  myContent(id: $id) {
     id
     title
     description
@@ -31,6 +46,7 @@ query MyDraft($id: String!) {
     thumbnail
     duration
     status
+    publishedAt
     category {
       id
       name
@@ -79,4 +95,8 @@ mutation PublishEditorDraft($id: String!) {
     status
     publishedAt
   }
+}
+
+mutation RemoveEditorContent($id: String!) {
+  removeContent(id: $id)
 }

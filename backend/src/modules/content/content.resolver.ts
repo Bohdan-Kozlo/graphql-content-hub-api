@@ -50,6 +50,20 @@ export class ContentResolver {
     return this.contentService.findOwnDraft(args.id, userId);
   }
 
+  @Query(() => [ContentModel])
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
+  myPublishedContents(@CurrentUser() userId: string) {
+    return this.contentService.findOwnPublishedContents(userId);
+  }
+
+  @Query(() => ContentModel, { nullable: true })
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
+  myContent(@Args() args: IdArgs, @CurrentUser() userId: string) {
+    return this.contentService.findOwnContent(args.id, userId);
+  }
+
   @UseGuards(AccessGuard, RolesGuard)
   @Roles(Role.EDITOR, Role.ADMIN)
   @Mutation(() => ContentModel)

@@ -54,6 +54,7 @@ for (const scenario of cases) {
           ...input,
           body: null,
           status: 'DRAFT',
+          publishedAt: null,
           category: { id: 'science', name: 'Science' },
           tags: [{ id: 'space', name: 'Space' }],
           source: null,
@@ -62,8 +63,10 @@ for (const scenario of cases) {
       }
       if (query.includes('MyDrafts'))
         return route.fulfill({ json: { data: { myDrafts: saved ? [saved] : [] } } })
-      if (query.includes('MyDraft('))
-        return route.fulfill({ json: { data: { myDraft: saved } } })
+      if (query.includes('MyContent('))
+        return route.fulfill({ json: { data: { myContent: saved } } })
+      if (query.includes('MyPublishedContents'))
+        return route.fulfill({ json: { data: { myPublishedContents: [] } } })
       return route.fulfill({ json: { data: {} } })
     })
     await page.goto('/editor')
@@ -98,7 +101,7 @@ for (const scenario of cases) {
       tagIds: ['space'],
     })
     expect(input).not.toHaveProperty('body')
-    await page.getByRole('link', { name: 'Your drafts' }).click()
+    await page.getByRole('link', { name: 'Your content' }).click()
     await expect(page.getByText('Night sky')).toBeVisible()
     await page.getByRole('link', { name: 'Open draft' }).click()
     await page.getByRole('button', { name: 'Preview' }).click()

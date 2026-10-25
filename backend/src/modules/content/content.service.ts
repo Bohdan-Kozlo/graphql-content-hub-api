@@ -91,6 +91,23 @@ export class ContentService {
     return content ? (await this.withEngagementState([content], userId))[0] : null;
   }
 
+  async findOwnPublishedContents(userId: string) {
+    const contents = await this.prismaService.content.findMany({
+      where: { authorId: userId, status: ContentStatus.PUBLISHED },
+      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      include: publicContentInclude,
+    });
+    return this.withEngagementState(contents, userId);
+  }
+
+  async findOwnContent(id: string, userId: string) {
+    const content = await this.prismaService.content.findFirst({
+      where: { id, authorId: userId },
+      include: publicContentInclude,
+    });
+    return content ? (await this.withEngagementState([content], userId))[0] : null;
+  }
+
   async publish(id: string, userId: string) {
     const draft = await this.prismaService.content.findFirst({
       where: { id, authorId: userId, status: ContentStatus.DRAFT },
@@ -289,9 +306,14 @@ export class ContentService {
     )
       validateArticleBody(data.body ?? contentBelongsToUser.body ?? undefined);
     const updatedType = data.type ?? contentBelongsToUser.type;
+    const mediaFieldsChanged =
+      data.type !== undefined ||
+      data.mediaUrl !== undefined ||
+      data.thumbnail !== undefined ||
+      data.duration !== undefined;
     if (
-      contentBelongsToUser.status === ContentStatus.DRAFT &&
-      (updatedType === ContentType.VIDEO || updatedType === ContentType.PODCAST)
+      (updatedType === ContentType.VIDEO || updatedType === ContentType.PODCAST) &&
+      (contentBelongsToUser.status === ContentStatus.DRAFT || mediaFieldsChanged)
     ) {
       validateMediaDraft({
         title: data.title ?? contentBelongsToUser.title,
@@ -312,9 +334,7 @@ export class ContentService {
       throw new BadRequestException('Content category is required');
 
     const content = await this.prismaService.content.update({
-      where: {
-        id,
-      },
+      where: { id, authorId: userId },
       data: {
         title: data.title,
         description: data.description,
@@ -356,9 +376,7 @@ export class ContentService {
     }
 
     const deletedContent = await this.prismaService.content.delete({
-      where: {
-        id,
-      },
+      where: { id, authorId: userId },
     });
 
     return deletedContent ? true : false;

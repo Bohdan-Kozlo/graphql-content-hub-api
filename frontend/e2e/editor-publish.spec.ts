@@ -45,6 +45,12 @@ test('editor publishes a saved draft, sees errors, and opens it from the catalog
       return route.fulfill({
         json: { data: { myDrafts: story.status === 'DRAFT' ? [story] : [] } },
       })
+    if (query.includes('MyPublishedContents'))
+      return route.fulfill({
+        json: {
+          data: { myPublishedContents: story.status === 'PUBLISHED' ? [story] : [] },
+        },
+      })
     if (query.includes('PublishEditorDraft')) {
       attempts++
       if (attempts === 1)

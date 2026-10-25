@@ -52,6 +52,7 @@ test('editor creates and reopens a formatted article draft', async ({ page }) =>
         body: variables!.data!.body,
         type: 'ARTICLE',
         status: 'DRAFT',
+        publishedAt: null,
         category: { id: 'science', name: 'Science' },
         tags: [],
         source: null,
@@ -63,8 +64,10 @@ test('editor creates and reopens a formatted article draft', async ({ page }) =>
     }
     if (query.includes('MyDrafts'))
       return route.fulfill({ json: { data: { myDrafts: saved ? [saved] : [] } } })
-    if (query.includes('MyDraft('))
-      return route.fulfill({ json: { data: { myDraft: saved } } })
+    if (query.includes('MyContent('))
+      return route.fulfill({ json: { data: { myContent: saved } } })
+    if (query.includes('MyPublishedContents'))
+      return route.fulfill({ json: { data: { myPublishedContents: [] } } })
     return route.fulfill({ json: { data: {} } })
   })
   await page.goto('/editor')
@@ -82,7 +85,7 @@ test('editor creates and reopens a formatted article draft', async ({ page }) =>
   await expect(page.getByLabel('Article preview').locator('strong')).toHaveText(
     'Bright stars',
   )
-  await page.getByRole('link', { name: 'Your drafts' }).click()
+  await page.getByRole('link', { name: 'Your content' }).click()
   await expect(page.getByText('Mapping the sky')).toBeVisible()
   await page.getByRole('link', { name: 'Open draft' }).click()
   await page.getByRole('button', { name: 'Preview' }).click()
@@ -129,6 +132,7 @@ test('editor creates news with tags and source, then changes its saved metadata'
         id: 'news-1',
         ...lastInput,
         status: 'DRAFT',
+        publishedAt: null,
         category: { id: 'science', name: 'Science' },
         tags,
         source: sources[0],
@@ -143,8 +147,10 @@ test('editor creates news with tags and source, then changes its saved metadata'
       saved = { ...saved, tags: [tags[1]], source: null }
       return route.fulfill({ json: { data: { updateContent: { id: 'news-1' } } } })
     }
-    if (query.includes('MyDraft('))
-      return route.fulfill({ json: { data: { myDraft: saved } } })
+    if (query.includes('MyContent('))
+      return route.fulfill({ json: { data: { myContent: saved } } })
+    if (query.includes('MyPublishedContents'))
+      return route.fulfill({ json: { data: { myPublishedContents: [] } } })
     if (query.includes('MyDrafts'))
       return route.fulfill({ json: { data: { myDrafts: saved ? [saved] : [] } } })
     return route.fulfill({ json: { data: {} } })

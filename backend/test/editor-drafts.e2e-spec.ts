@@ -372,4 +372,125 @@ describe('Editor drafts GraphQL HTTP', () => {
     expect(changed.body.errors).toBeUndefined();
     expect(changed.body.data.updateContent.title).toBe('Corrected video');
   });
+
+  it('edits only owned published content without changing its first publication date', async () => {
+    const firstPublishedAt = new Date('2020-01-01T00:00:00.000Z');
+    const story = await prisma.content.create({
+      data: {
+        ...data(),
+        title: `Original ${marker}`,
+        authorId: userIds[0],
+        status: 'PUBLISHED',
+        publishedAt: firstPublishedAt,
+        tagIds: undefined,
+      },
+    });
+    const update =
+      'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id title description body status publishedAt category { id } tags { id } source { id } } }';
+    const changedBody = JSON.stringify({
+      version: 1,
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Corrected text' }] }],
+    });
+    const changes = {
+      title: `Corrected ${marker}`,
+      description: 'Updated description',
+      body: changedBody,
+      categoryId,
+      tagIds,
+      sourceId,
+    };
+    expect((await post(update, otherToken, { id: story.id, data: changes })).body.errors).toBeDefined();
+    expect((await post(update, adminToken, { id: story.id, data: changes })).body.errors).toBeDefined();
+    expect((await post(update, userToken, { id: story.id, data: changes })).body.errors).toBeDefined();
+    const owner = await post(update, editorToken, { id: story.id, data: changes });
+    expect(owner.body.errors).toBeUndefined();
+    expect(owner.body.data.updateContent).toMatchObject({
+      title: changes.title,
+      description: changes.description,
+      body: changedBody,
+      status: 'PUBLISHED',
+      publishedAt: firstPublishedAt.toISOString(),
+      category: { id: categoryId },
+      source: { id: sourceId },
+    });
+    expect((owner.body.data.updateContent.tags as { id: string }[]).map(({ id }) => id).sort()).toEqual(
+      [...tagIds].sort(),
+    );
+    const publicStory = await post('query($id: String!) { content(id: $id) { title body publishedAt } }', undefined, {
+      id: story.id,
+    });
+    expect(publicStory.body.data.content).toEqual({
+      title: changes.title,
+      body: changedBody,
+      publishedAt: firstPublishedAt.toISOString(),
+    });
+    const ownList = await post('query { myPublishedContents { id } }', editorToken);
+    expect(ownList.body.data.myPublishedContents).toContainEqual({ id: story.id });
+    expect(
+      (await post('query { myPublishedContents { id } }', otherToken)).body.data.myPublishedContents,
+    ).not.toContainEqual({ id: story.id });
+    expect((await post('query { myPublishedContents { id } }', userToken)).body.errors).toBeDefined();
+    expect(
+      (await post('query($id: String!) { myContent(id: $id) { id } }', otherToken, { id: story.id })).body.data
+        .myContent,
+    ).toBeNull();
+  });
+
+  it('updates published media fields and rejects unsafe URLs', async () => {
+    const story = await prisma.content.create({
+      data: {
+        title: 'Video',
+        description: 'Initial',
+        type: 'VIDEO',
+        mediaUrl: 'https://example.org/old',
+        categoryId,
+        authorId: userIds[0],
+        status: 'PUBLISHED',
+        publishedAt: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
+    const update =
+      'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { mediaUrl thumbnail duration publishedAt } }';
+    expect(
+      (await post(update, editorToken, { id: story.id, data: { mediaUrl: 'javascript:alert(1)' } })).body.errors,
+    ).toBeDefined();
+    const changed = await post(update, editorToken, {
+      id: story.id,
+      data: { mediaUrl: 'https://example.org/new', thumbnail: 'https://example.org/cover.jpg', duration: 90 },
+    });
+    expect(changed.body.errors).toBeUndefined();
+    expect(changed.body.data.updateContent).toEqual({
+      mediaUrl: 'https://example.org/new',
+      thumbnail: 'https://example.org/cover.jpg',
+      duration: 90,
+      publishedAt: '2020-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('deletes owned content and its discussion, reactions, views, and bookmarks', async () => {
+    const story = await prisma.content.create({
+      data: { ...data(), authorId: userIds[0], status: 'PUBLISHED', publishedAt: new Date() },
+    });
+    const comment = await prisma.comment.create({ data: { contentId: story.id, userId: userIds[2], text: 'Comment' } });
+    await prisma.comment.create({
+      data: { contentId: story.id, userId: userIds[0], parentId: comment.id, text: 'Reply' },
+    });
+    await prisma.reaction.create({ data: { contentId: story.id, userId: userIds[2], type: 'LIKE' } });
+    await prisma.reaction.create({ data: { contentId: story.id, userId: userIds[2], type: 'SAVE' } });
+    await prisma.view.create({ data: { contentId: story.id, userId: userIds[2], requestId: randomUUID() } });
+    await prisma.readingHistory.create({ data: { contentId: story.id, userId: userIds[2] } });
+    const remove = 'mutation($id: String!) { removeContent(id: $id) }';
+    expect((await post(remove, otherToken, { id: story.id })).body.errors).toBeDefined();
+    expect((await post(remove, adminToken, { id: story.id })).body.errors).toBeDefined();
+    expect((await post(remove, userToken, { id: story.id })).body.errors).toBeDefined();
+    expect((await post(remove, editorToken, { id: story.id })).body.data.removeContent).toBe(true);
+    expect(
+      (await post('query($id: String!) { content(id: $id) { id } }', undefined, { id: story.id })).body.data.content,
+    ).toBeNull();
+    expect(await prisma.comment.count({ where: { contentId: story.id } })).toBe(0);
+    expect(await prisma.reaction.count({ where: { contentId: story.id } })).toBe(0);
+    expect(await prisma.view.count({ where: { contentId: story.id } })).toBe(0);
+    expect(await prisma.readingHistory.count({ where: { contentId: story.id } })).toBe(0);
+  });
 });
