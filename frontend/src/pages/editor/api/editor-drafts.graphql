@@ -9,6 +9,14 @@ query MyDrafts {
       id
       name
     }
+    tags {
+      id
+      name
+    }
+    source {
+      id
+      name
+    }
   }
 }
 
@@ -24,23 +32,39 @@ query MyDraft($id: String!) {
       id
       name
     }
+    tags {
+      id
+      name
+    }
+    source {
+      id
+      name
+    }
   }
 }
 
-query EditorCategories {
+query EditorMetadataOptions {
   categories {
+    id
+    name
+  }
+  tags {
+    id
+    name
+  }
+  sources {
     id
     name
   }
 }
 
-mutation CreateArticleDraft($data: CreateContentInput!) {
+mutation CreateEditorDraft($data: CreateContentInput!) {
   createContent(data: $data) {
     id
   }
 }
 
-mutation UpdateArticleDraft($id: String!, $data: UpdateContentInput!) {
+mutation UpdateEditorDraft($id: String!, $data: UpdateContentInput!) {
   updateContent(id: $id, data: $data) {
     id
   }

@@ -31,8 +31,8 @@ export class ContentService {
   ) {}
 
   async create(data: CreateContentInput, userId: string) {
-    if (data.type === ContentType.ARTICLE) {
-      if (!data.categoryId) throw new BadRequestException('Article category is required');
+    if (data.type === ContentType.ARTICLE || data.type === ContentType.NEWS) {
+      if (!data.categoryId) throw new BadRequestException('Content category is required');
       validateArticleBody(data.body);
     }
     const user = await this.userService.findOne(userId);
@@ -249,14 +249,17 @@ export class ContentService {
     }
     if (
       data.type === ContentType.ARTICLE ||
-      (contentBelongsToUser.type === ContentType.ARTICLE && data.body !== undefined)
+      data.type === ContentType.NEWS ||
+      ((contentBelongsToUser.type === ContentType.ARTICLE || contentBelongsToUser.type === ContentType.NEWS) &&
+        data.body !== undefined)
     )
       validateArticleBody(data.body ?? contentBelongsToUser.body ?? undefined);
+    const updatedType = data.type ?? contentBelongsToUser.type;
     if (
-      (data.type ?? contentBelongsToUser.type) === ContentType.ARTICLE &&
+      (updatedType === ContentType.ARTICLE || updatedType === ContentType.NEWS) &&
       !(data.categoryId ?? contentBelongsToUser.categoryId)
     )
-      throw new BadRequestException('Article category is required');
+      throw new BadRequestException('Content category is required');
 
     const content = await this.prismaService.content.update({
       where: {

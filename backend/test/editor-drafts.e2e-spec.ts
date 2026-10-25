@@ -18,6 +18,9 @@ describe('Editor drafts GraphQL HTTP', () => {
   let userToken: string;
   let adminToken: string;
   let draftId: string;
+  let newsId: string;
+  let tagIds: string[];
+  let sourceId: string;
   const body = JSON.stringify({
     version: 1,
     type: 'doc',
@@ -51,6 +54,10 @@ describe('Editor drafts GraphQL HTTP', () => {
     await app.init();
     prisma = app.get(PrismaService);
     categoryId = (await prisma.category.create({ data: { name: `Editor ${marker}` } })).id;
+    tagIds = await Promise.all(
+      ['Science', 'Local'].map(async (name) => (await prisma.tag.create({ data: { name: `${name} ${marker}` } })).id),
+    );
+    sourceId = (await prisma.source.create({ data: { name: `Journal ${marker}`, url: 'https://example.org' } })).id;
     async function account(role: Role, label: string) {
       const response = await request(app.getHttpServer())
         .post('/graphql')
@@ -74,6 +81,8 @@ describe('Editor drafts GraphQL HTTP', () => {
     if (prisma) {
       await prisma.content.deleteMany({ where: { authorId: { in: userIds } } });
       await prisma.category.delete({ where: { id: categoryId } });
+      await prisma.tag.deleteMany({ where: { id: { in: tagIds } } });
+      await prisma.source.delete({ where: { id: sourceId } });
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     }
     if (app) await app.close();
@@ -136,5 +145,49 @@ describe('Editor drafts GraphQL HTTP', () => {
       { id: draftId, data: { title: 'Stolen' } },
     );
     expect(update.body.errors).toBeDefined();
+  });
+
+  it('creates and updates owned news with multiple tags and an optional source', async () => {
+    const newsMutation = `mutation Create($data: CreateContentInput!) { createContent(data: $data) { id type body category { id } tags { id } source { id } } }`;
+    const created = await post(newsMutation, editorToken, {
+      data: { ...data(), type: 'NEWS', tagIds, sourceId },
+    });
+    expect(created.body.errors).toBeUndefined();
+    expect(created.body.data.createContent).toMatchObject({
+      type: 'NEWS',
+      body,
+      category: { id: categoryId },
+      source: { id: sourceId },
+    });
+    const createdTags = created.body.data.createContent.tags as { id: string }[];
+    expect(createdTags.map((tag) => tag.id).sort()).toEqual([...tagIds].sort());
+    newsId = created.body.data.createContent.id as string;
+
+    const own = await post('query($id: String!) { myDraft(id: $id) { id source { id } tags { id } } }', editorToken, {
+      id: newsId,
+    });
+    expect(own.body.data.myDraft.source.id).toBe(sourceId);
+    expect(own.body.data.myDraft.tags).toHaveLength(2);
+    expect(
+      (await post('query($id: String!) { myDraft(id: $id) { id } }', otherToken, { id: newsId })).body.data.myDraft,
+    ).toBeNull();
+    expect(
+      (await post('query($id: String!) { content(id: $id) { id } }', undefined, { id: newsId })).body.data.content,
+    ).toBeNull();
+
+    const update =
+      'mutation($id: String!, $data: UpdateContentInput!) { updateContent(id: $id, data: $data) { id tags { id } source { id } } }';
+    expect(
+      (await post(update, otherToken, { id: newsId, data: { tagIds: [], sourceId: null } })).body.errors,
+    ).toBeDefined();
+    const changed = await post(update, editorToken, { id: newsId, data: { tagIds: [tagIds[1]], sourceId: null } });
+    expect(changed.body.errors).toBeUndefined();
+    expect(changed.body.data.updateContent).toMatchObject({ tags: [{ id: tagIds[1] }], source: null });
+    expect(
+      (await post(create, editorToken, { data: { ...data(), type: 'NEWS', categoryId: undefined } })).body.errors,
+    ).toBeDefined();
+    expect(
+      (await post(create, editorToken, { data: { ...data(), type: 'NEWS', body: '<script />' } })).body.errors,
+    ).toBeDefined();
   });
 });

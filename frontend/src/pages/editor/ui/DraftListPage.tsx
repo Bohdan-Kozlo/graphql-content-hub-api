@@ -15,15 +15,23 @@ export default function DraftListPage() {
           </p>
           <h1 className="mt-3 font-hub-display text-5xl font-semibold">Your drafts</h1>
           <p className="mt-3 text-hub-muted">
-            Articles in progress are private until published.
+            Articles and news in progress are private until published.
           </p>
         </div>
-        <Link
-          to="/editor/new"
-          className="rounded-full bg-hub-accent px-6 py-3 font-semibold text-hub-page"
-        >
-          New article
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/editor/new"
+            className="rounded-full bg-hub-accent px-6 py-3 font-semibold text-hub-page"
+          >
+            New article
+          </Link>
+          <Link
+            to="/editor/new?type=news"
+            className="rounded-full border border-hub-line px-6 py-3 font-semibold"
+          >
+            New news
+          </Link>
+        </div>
       </div>
       {loading && (
         <p role="status" className="mt-10">
@@ -39,7 +47,7 @@ export default function DraftListPage() {
         </div>
       )}
       {!loading && !error && data?.myDrafts.length === 0 && (
-        <p className="mt-10 text-hub-muted">No drafts yet. Start your first article.</p>
+        <p className="mt-10 text-hub-muted">No drafts yet. Start your first story.</p>
       )}
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {data?.myDrafts.map((draft) => (
@@ -48,7 +56,12 @@ export default function DraftListPage() {
             className="rounded-3xl border border-hub-line bg-hub-surface p-6"
           >
             <span className="text-xs font-bold tracking-widest text-hub-accent uppercase">
-              Draft · {draft.category?.name ?? 'Uncategorized'}
+              {draft.type === 'NEWS'
+                ? 'News draft'
+                : draft.type === 'ARTICLE'
+                  ? 'Article draft'
+                  : 'Draft'}{' '}
+              · {draft.category?.name ?? 'Uncategorized'}
             </span>
             <h2 className="mt-3 font-hub-display text-2xl font-semibold">
               {draft.title}

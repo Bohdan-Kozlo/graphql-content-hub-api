@@ -1,7 +1,11 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 
-type Props = { initialBody?: string | null; onChange: (body: string) => void }
+type Props = {
+  initialBody?: string | null
+  onChange: (body: string) => void
+  label?: string
+}
 
 function initialContent(body?: string | null) {
   if (!body) return { type: 'doc', content: [{ type: 'paragraph' }] }
@@ -22,7 +26,7 @@ function initialContent(body?: string | null) {
   }
 }
 
-export function RichTextEditor({ initialBody, onChange }: Props) {
+export function RichTextEditor({ initialBody, onChange, label = 'Article text' }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -32,7 +36,7 @@ export function RichTextEditor({ initialBody, onChange }: Props) {
       }),
     ],
     content: initialContent(initialBody),
-    editorProps: { attributes: { 'aria-label': 'Article text' } },
+    editorProps: { attributes: { 'aria-label': label } },
     onUpdate({ editor }) {
       onChange(JSON.stringify({ version: 1, ...editor.getJSON() }))
     },
@@ -71,7 +75,7 @@ export function RichTextEditor({ initialBody, onChange }: Props) {
       </div>
       <EditorContent
         editor={editor}
-        aria-label="Article text"
+        aria-label={label}
         className="min-h-64 px-5 py-4 leading-8 [&_.ProseMirror]:min-h-56 [&_.ProseMirror]:outline-none [&_h2]:font-hub-display [&_h2]:text-2xl [&_ul]:list-disc [&_ul]:pl-6"
       />
     </div>
