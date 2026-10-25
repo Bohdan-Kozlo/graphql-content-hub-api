@@ -66,6 +66,13 @@ export class ContentResolver {
 
   @UseGuards(AccessGuard, RolesGuard)
   @Roles(Role.EDITOR, Role.ADMIN)
+  @Mutation(() => ContentModel)
+  async publishContent(@Args() args: IdArgs, @CurrentUser() userId: string) {
+    return this.contentService.publish(args.id, userId);
+  }
+
+  @UseGuards(AccessGuard, RolesGuard)
+  @Roles(Role.EDITOR, Role.ADMIN)
   @Mutation(() => Boolean)
   async removeContent(@Args() args: IdArgs, @CurrentUser() userId: string) {
     return await this.contentService.remove(args.id, userId);

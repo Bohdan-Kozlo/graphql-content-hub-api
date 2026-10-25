@@ -78,3 +78,13 @@ export function validateArticleBody(body: string | undefined): void {
     throw new BadRequestException('Invalid article body');
   }
 }
+
+export function validatePublishableArticleBody(body: string | undefined): void {
+  validateArticleBody(body);
+  const document = JSON.parse(body!) as { content: RichNode[] };
+  function hasText(node: RichNode): boolean {
+    if (typeof node.text === 'string' && node.text.trim()) return true;
+    return Array.isArray(node.content) && node.content.some((child: RichNode) => hasText(child));
+  }
+  if (!document.content.some(hasText)) throw new BadRequestException('Article text is required before publishing');
+}

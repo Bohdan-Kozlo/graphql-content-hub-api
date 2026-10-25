@@ -72,3 +72,11 @@ mutation UpdateEditorDraft($id: String!, $data: UpdateContentInput!) {
     id
   }
 }
+
+mutation PublishEditorDraft($id: String!) {
+  publishContent(id: $id) {
+    id
+    status
+    publishedAt
+  }
+}

@@ -200,6 +200,7 @@ type Mutation {
   deleteComment(id: String!): Boolean!
   createContent(data: CreateContentInput!): ContentModel!
   updateContent(id: String!, data: UpdateContentInput!): ContentModel!
+  publishContent(id: String!): ContentModel!
   removeContent(id: String!): Boolean!
   createCategory(data: CreateCategoryInput!): CategoryModel!
   updateCategory(id: String!, data: UpdateCategoryInput!): CategoryModel!

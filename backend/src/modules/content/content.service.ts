@@ -5,7 +5,7 @@ import { UserService } from '../user/user.service';
 import { UpdateContentInput } from './dto/update-content.input';
 import { ContentStatus, ContentType, Prisma, ReactionType } from '../../../prisma/generated/client';
 import { publicContentInclude } from './public-content.include';
-import { validateArticleBody } from './article-body';
+import { validateArticleBody, validatePublishableArticleBody } from './article-body';
 import { validateMediaDraft } from './media-draft';
 
 type CatalogFilters = {
@@ -89,6 +89,38 @@ export class ContentService {
       include: publicContentInclude,
     });
     return content ? (await this.withEngagementState([content], userId))[0] : null;
+  }
+
+  async publish(id: string, userId: string) {
+    const draft = await this.prismaService.content.findFirst({
+      where: { id, authorId: userId, status: ContentStatus.DRAFT },
+    });
+    if (!draft) throw new BadRequestException('Draft is unavailable');
+    if (!draft.title.trim() || !draft.description.trim() || !draft.categoryId) {
+      throw new BadRequestException('Complete the title, description, and category before publishing');
+    }
+    if (draft.type === ContentType.ARTICLE || draft.type === ContentType.NEWS) {
+      validatePublishableArticleBody(draft.body ?? undefined);
+    } else {
+      validateMediaDraft({
+        title: draft.title,
+        description: draft.description,
+        type: draft.type,
+        categoryId: draft.categoryId,
+        mediaUrl: draft.mediaUrl ?? undefined,
+        thumbnail: draft.thumbnail ?? undefined,
+        duration: draft.duration ?? undefined,
+        body: draft.body ?? undefined,
+        readTime: draft.readTime ?? undefined,
+      });
+    }
+
+    const result = await this.prismaService.content.updateMany({
+      where: { id, authorId: userId, status: ContentStatus.DRAFT, updatedAt: draft.updatedAt },
+      data: { status: ContentStatus.PUBLISHED, publishedAt: new Date() },
+    });
+    if (result.count !== 1) throw new BadRequestException('Draft is unavailable');
+    return this.findPublishedById(id, userId);
   }
 
   async findPublishedPage(first: number, after?: string, filters: CatalogFilters = {}, userId: string | null = null) {

@@ -18,6 +18,7 @@ describe('Editor drafts GraphQL HTTP', () => {
   let userToken: string;
   let adminToken: string;
   let draftId: string;
+  let adminDraftId: string;
   let newsId: string;
   let tagIds: string[];
   let sourceId: string;
@@ -95,6 +96,7 @@ describe('Editor drafts GraphQL HTTP', () => {
     draftId = response.body.data.createContent.id as string;
     const admin = await post(create, adminToken, { data: { ...data(), title: 'Admin draft' } });
     expect(admin.body.errors).toBeUndefined();
+    adminDraftId = admin.body.data.createContent.id as string;
   });
 
   it('rejects users, missing categories, and unsafe rich text', async () => {
@@ -149,6 +151,84 @@ describe('Editor drafts GraphQL HTTP', () => {
       { id: draftId, data: { title: 'Stolen' } },
     );
     expect(update.body.errors).toBeDefined();
+  });
+
+  it('publishes only the author’s ready draft and exposes it newest first', async () => {
+    const mutation = 'mutation($id: String!) { publishContent(id: $id) { id status publishedAt } }';
+    const variables = { id: draftId };
+    const older = await prisma.content.create({
+      data: {
+        title: `Older ${marker}`,
+        description: 'Previously published',
+        type: 'ARTICLE',
+        body,
+        authorId: userIds[0],
+        categoryId,
+        status: 'PUBLISHED',
+        publishedAt: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
+    expect((await post(mutation, undefined, variables)).body.errors).toBeDefined();
+    expect((await post(mutation, userToken, variables)).body.errors).toBeDefined();
+    expect((await post(mutation, otherToken, variables)).body.errors).toBeDefined();
+    expect((await post(mutation, adminToken, variables)).body.errors).toBeDefined();
+
+    const before = Date.now();
+    const published = await post(mutation, editorToken, variables);
+    const after = Date.now();
+    expect(published.body.errors).toBeUndefined();
+    expect(published.body.data.publishContent).toMatchObject({ id: draftId, status: 'PUBLISHED' });
+    const publishedAt = Date.parse(published.body.data.publishContent.publishedAt as string);
+    expect(publishedAt).toBeGreaterThanOrEqual(before);
+    expect(publishedAt).toBeLessThanOrEqual(after);
+
+    const visible = await post(
+      'query($id: String!, $search: String!) { content(id: $id) { id status publishedAt } publishedContents(search: $search) { items { id publishedAt } } }',
+      undefined,
+      { id: draftId, search: marker },
+    );
+    expect(visible.body.errors).toBeUndefined();
+    expect(visible.body.data.content).toMatchObject({ id: draftId, status: 'PUBLISHED' });
+    const catalogItems = visible.body.data.publishedContents.items as { id: string }[];
+    expect(catalogItems.map((item) => item.id)).toEqual([draftId, older.id]);
+    expect((await post(mutation, editorToken, variables)).body.errors).toBeDefined();
+    expect(
+      (await post('query($id: String!) { myDraft(id: $id) { id } }', editorToken, variables)).body.data.myDraft,
+    ).toBeNull();
+    const adminPublished = await post(mutation, adminToken, { id: adminDraftId });
+    expect(adminPublished.body.errors).toBeUndefined();
+    expect(adminPublished.body.data.publishContent).toMatchObject({ id: adminDraftId, status: 'PUBLISHED' });
+  });
+
+  it('keeps incomplete legacy drafts private', async () => {
+    const incomplete = await prisma.content.create({
+      data: {
+        title: `Incomplete ${marker}`,
+        description: 'Missing category',
+        type: 'ARTICLE',
+        body,
+        authorId: userIds[0],
+      },
+    });
+    const mutation = 'mutation($id: String!) { publishContent(id: $id) { id } }';
+    expect((await post(mutation, editorToken, { id: incomplete.id })).body.errors).toBeDefined();
+    expect(
+      (await post('query($id: String!) { content(id: $id) { id } }', undefined, { id: incomplete.id })).body.data
+        .content,
+    ).toBeNull();
+  });
+
+  it('does not publish an article with empty text', async () => {
+    const empty = await post(create, editorToken, {
+      data: {
+        ...data(),
+        body: JSON.stringify({ version: 1, type: 'doc', content: [{ type: 'paragraph' }] }),
+      },
+    });
+    expect(empty.body.errors).toBeUndefined();
+    const id = empty.body.data.createContent.id as string;
+    const mutation = 'mutation($id: String!) { publishContent(id: $id) { id } }';
+    expect((await post(mutation, editorToken, { id })).body.errors).toBeDefined();
   });
 
   it('creates and updates owned news with multiple tags and an optional source', async () => {
